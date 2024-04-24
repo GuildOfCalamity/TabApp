@@ -106,11 +106,6 @@ public class TabViewModel : ObservableRecipient
 
     public ICommand SampleCommand { get; }
 
-    static readonly List<string> applications = new List<string>() {
-            "ICSAdminConfiguration", "ICSAccountingExport", "CentralLogServer", "Touch", "TouchPOSReady", "MainApp", "StackController", "TouchES",
-            "VFDHMI", "WashConnect", "Cage", "CageSecure", "CageCLS", "NetFuel-WC", "NetFuelExp-WC"
-    };
-
     static readonly List<string> emojis = new List<string> { "✔️","👍","👌","🧹","🧯","🛒","💼","📁","📂","🗂️","🔨","⛏️","⚒️","🛠️","🗡️","⚔️","💣","🏹","🛡️","🔧","🔩","⚙️","🗜️","⚖️","🔗","⛓️","🧰","🧲","⚗️","🧪","🧫","🔬","🔭","📡","🔈","🔉","🔊","📢","📣","📯","🔔","🔕","🎼","🎵","🎶","🎙️","🎚️","🎛️","🎤","🎧","📻","🎷","🎸","🎹","🎺","🎻","🥁" };
     #endregion
 
@@ -144,60 +139,25 @@ public class TabViewModel : ObservableRecipient
                 if (btn != null)
                     AddDataItem($"📢 INFO", $"Got Button \"{btn.Content}\"");
 
-                var installRoot = @"D:\ICS";
+                var installRoot = Directory.GetCurrentDirectory();
                 var files = new List<FileInfo>();
                 var dir = new DirectoryInfo(installRoot);
                 if (dir.Exists)
                 {
-                    var results = dir.GetFiles($"Touch*.exe", SearchOption.TopDirectoryOnly);
+                    var results = dir.GetFiles($"Tab*.*", SearchOption.TopDirectoryOnly);
                     foreach (var file in results)
                     {
                         Debug.WriteLine($"📢 INFO {file.Name} ({file.FullName.GetFileVersion()})");
                     }
 
-                    files.AddRange(dir.GetFiles($"TouchPOSReady.exe", SearchOption.AllDirectories));
-                    files.AddRange(dir.GetFiles($"TouchPOSReady.dll", SearchOption.AllDirectories));
+                    files.AddRange(dir.GetFiles($"TabApp.exe", SearchOption.AllDirectories));
+                    files.AddRange(dir.GetFiles($"TabApp.dll", SearchOption.AllDirectories));
                     files = files.Where(o => !o.FullName.Contains(Path.Combine(dir.FullName, ".backup"))).ToList();
                     foreach (var file in files)
                     {
                         Debug.WriteLine($"📢 INFO {file.Name} ({file.FullName.GetFileVersion()})");
                     }
-
-                    var touchNames = applications.Where(a => a.ToLower().Contains("touch"));
-                    foreach (var name in touchNames)
-                    {
-                        var file = new FileInfo(Path.Combine(installRoot, $"{name}.exe"));
-                        if (file.Exists)
-                        {
-                            Debug.WriteLine($"Found {file.FullName} (v{FileVersionInfo.GetVersionInfo(file.FullName).FileVersion})");
-                        }
-                    }
-
-                    #region [TouchPOSReady search]
-                    var set1 = dir.GetFiles($"TouchPOSReady.exe", SearchOption.TopDirectoryOnly);
-                    foreach (var file in set1)
-                    {
-                        if (file.Exists)
-                        {
-                            Debug.WriteLine($"Found {file.FullName} (v{FileVersionInfo.GetVersionInfo(file.FullName).FileVersion})");
-                            files.Add(file);
-                        }
-                    }
-                    set1 = dir.GetFiles($"Touch.exe", SearchOption.TopDirectoryOnly);
-                    foreach (var file in set1)
-                    {
-                        if (file.Exists)
-                        {
-                            Debug.WriteLine($"Found {file.FullName} (v{FileVersionInfo.GetVersionInfo(file.FullName).FileVersion})");
-                            files.Add(file);
-                        }
-                    }
                 }
-                else
-                {
-                    AddDataItem($"🔔 WARN", $"Directory not found \"{installRoot}\"");
-                }
-                #endregion
             }
             else
             {
