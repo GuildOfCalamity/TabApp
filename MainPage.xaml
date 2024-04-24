@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="TabApp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:TabApp"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Background="{ThemeResource BackgroundBrush}"
+    mc:Ignorable="d">
+    <!--#region [Tab UI using NavigationView]-->
+    <Grid BorderThickness="0">
+        <Grid.Resources>
+            <!--#region [NavigationView]-->
+            <!--
+                Some of these properties will not be relevant when
+                the NavigationView is set to PaneDisplayMode="Top".
+            -->
+            <Thickness x:Key="NavigationViewHeaderMargin">12,0</Thickness>
+            <Thickness x:Key="NavigationViewItemInnerHeaderMargin">12,0</Thickness>
+            <Thickness x:Key="NavigationViewToggleBorderThickness">0</Thickness>
+            <x:Double x:Key="PaneToggleButtonSize">40</x:Double>
+            <x:Double x:Key="PaneToggleButtonHeight">36</x:Double>
+            <x:Double x:Key="PaneToggleButtonWidth">40</x:Double>
+            <x:Double x:Key="NavigationViewCompactPaneLength">48</x:Double>
+            <x:Double x:Key="NavigationViewTopPaneHeight">45</x:Double>
+            <x:Double x:Key="NavigationViewItemSeparatorHeight">4</x:Double>
+            <Brush x:Key="NavigationViewItemBorderBrush">#FF5FB2F2</Brush>
+            <Brush x:Key="NavigationViewSelectionIndicatorForeground">#FF5FB2F2</Brush>
+            <!--<Brush x:Key="NavigationViewContentBackground">#155FB2F2</Brush>-->
+            <Brush x:Key="TopNavigationViewItemBackgroundPointerOver">#3F5FB2F2</Brush>
+            <Brush x:Key="TopNavigationViewItemBackgroundSelectedPointerOver">#5F5FB2F2</Brush>
+            <Brush x:Key="TopNavigationViewItemSeparatorForeground">#FF5FB2F2</Brush>
+            <Brush x:Key="TopNavigationViewItemBackgroundSelected">#255FB2F2</Brush>
+            <!--<LinearGradientBrush x:Key="TopNavigationViewItemBackgroundSelected" StartPoint="0,0" EndPoint="0,5">
+                <LinearGradientBrush.GradientStops>
+                    <GradientStop Offset="0.0" Color="LightGray" />
+                    <GradientStop Offset="0.04" Color="#437BA5" />
+                    <GradientStop Offset="1.0" Color="#2B506B" />
+                </LinearGradientBrush.GradientStops>
+            </LinearGradientBrush>-->
+            <!--#endregion-->
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <!--#region [Dropdown-style Menu]-->
+        <MenuBar Grid.Row="0">
+            <MenuBarItem Title="File">
+                <MenuFlyoutItem Text="Create New" />
+                <MenuFlyoutItem Text="Open Existing" />
+                <MenuFlyoutItem Click="mfiExitClick" Text="Exit" />
+            </MenuBarItem>
+            <MenuBarItem Title="View">
+                <MenuFlyoutSubItem Text="Orientation">
+                    <MenuFlyoutItem Text="Horizontal" />
+                    <MenuFlyoutItem Text="Vertical" />
+                </MenuFlyoutSubItem>
+            </MenuBarItem>
+            <MenuBarItem Title="Select">
+                <MenuFlyoutSubItem Text="Tabs">
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab1" />
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab2" />
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab3" />
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab4" />
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab5" />
+                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab6" />
+                </MenuFlyoutSubItem>
+            </MenuBarItem>
+            <MenuBarItem Title="Help">
+                <MenuFlyoutItem Text="Documentation" />
+                <MenuFlyoutItem Text="About" />
+            </MenuBarItem>
+        </MenuBar>
+        <!--#endregion-->
+        <NavigationView
+            x:Name="TabNavigationView"
+            Grid.Row="1"
+            Margin="0,0,0,0"
+            Background="{ThemeResource BackgroundBrush}"
+            CompactModeThresholdWidth="0"
+            CompactPaneLength="80"
+            CornerRadius="5"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            IsTitleBarAutoPaddingEnabled="False"
+            ItemInvoked="TabNavigationItemInvoked"
+            PaneDisplayMode="LeftCompact"
+            SelectionChanged="TabNavigationSelectionChanged">
+            <NavigationView.Resources>
+                <Style TargetType="NavigationViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                    <Setter Property="MinWidth" Value="60" />
+                </Style>
+            </NavigationView.Resources>
+            <NavigationView.PaneCustomContent>
+                <TextBlock
+                    Margin="20,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource StatusBrush}"
+                    Text="" />
+            </NavigationView.PaneCustomContent>
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="nvi1" Content="Tab1">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Design}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Tab2">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Website}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Tab3">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Airplane}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Tab4">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Admin}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Tab5">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource World}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Tab6">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Calories}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.HeaderTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" />
+                </DataTemplate>
+            </NavigationView.HeaderTemplate>
+            <Frame
+                x:Name="ContentFrame"
+                Background="Transparent"
+                CacheSize="{x:Bind TabNavigationView.MenuItems.Count}"
+                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                ScrollViewer.HorizontalScrollMode="Enabled"
+                ScrollViewer.VerticalScrollBarVisibility="Visible"
+                ScrollViewer.VerticalScrollMode="Enabled">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition>
+                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                <SlideNavigationTransitionInfo />
+                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                        </NavigationThemeTransition>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
+        </NavigationView>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState>
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="800" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="TabNavigationView.PaneDisplayMode" Value="Top" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+    <!--#endregion-->
+</Page>

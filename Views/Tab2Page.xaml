@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="TabApp.Views.Tab2Page"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helper="using:TabApp.Helpers"
+    xmlns:local="using:TabApp.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:model="using:TabApp.Models"
+    x:Name="ThisPage"
+    Background="{ThemeResource BackgroundBrush}"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <ThemeShadow x:Name="SharedShadow" />
+        <Storyboard x:Name="OpacityStoryboard">
+            <DoubleAnimation
+                AutoReverse="False"
+                Storyboard.TargetName="root"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:1.2" />
+        </Storyboard>
+    </Page.Resources>
+
+    <Grid
+        x:Name="root"
+        Margin="10,10,20,20"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        BorderBrush="{ThemeResource GradientBrushDiag}"
+        BorderThickness="4"
+        ColumnSpacing="5"
+        CornerRadius="5"
+        RowSpacing="5"
+        Shadow="{StaticResource SharedShadow}"
+        Translation="0,0,64">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="3*" />
+        </Grid.RowDefinitions>
+
+        <!--#region [Gradient Background Effect]-->
+        <Rectangle
+            x:Name="BackgroundRectangle"
+            Grid.RowSpan="2"
+            Margin="-1"
+            Opacity="1"
+            Stretch="UniformToFill">
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <LinearGradientBrush.GradientStops>
+                        <GradientStop Offset="0" Color="#6F101014" />
+                        <GradientStop Offset="0.2" Color="#6F202024" />
+                        <GradientStop Offset="0.6" Color="#6F033B9E" />
+                        <GradientStop Offset="0.8" Color="#7F00214C" />
+                        <GradientStop Offset="1" Color="#7F010E26" />
+                    </LinearGradientBrush.GradientStops>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <!--#endregion-->
+
+        <!--#region [Controls]-->
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+            <TextBlock
+                x:Name="tbTitle"
+                Margin="20,10"
+                FontSize="{StaticResource FontSizeHuge}" />
+            <Grid
+                Margin="20,10"
+                HorizontalAlignment="Stretch"
+                ColumnDefinitions="2*,2*">
+                <StackPanel
+                    Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="20">
+                    <Button
+                        Command="{x:Bind ViewModel.SampleCommand}"
+                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Mode=OneWay}"
+                        Content="Search"
+                        IsEnabled="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
+                        Style="{StaticResource EnhancedButtonStyle}" />
+                    <ProgressRing
+                        Width="28"
+                        Height="28"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource SecondaryBrush}"
+                        Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanVisibility}, ConverterParameter=False}" />
+                </StackPanel>
+                <StackPanel
+                    Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="5">
+                    <ToggleSwitch Header="Option #1" IsOn="{x:Bind ViewModel.Option1, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Option #2" IsOn="{x:Bind ViewModel.Option2, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Option #3" IsOn="{x:Bind ViewModel.Option3, Mode=TwoWay}" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+        <!--#endregion-->
+
+        <!--#region [DataItem ListView]-->
+        <Grid
+            Grid.Row="1"
+            Margin="10"
+            Padding="8"
+            RowDefinitions="Auto,*">
+            <Grid.Resources>
+                <Style x:Key="ColumnHeaderBorderStyle" TargetType="Border">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Padding" Value="0,0,10,0" />
+                    <Setter Property="CornerRadius" Value="2" />
+                    <Setter Property="BorderThickness" Value="0,0,0,2" />
+                    <Setter Property="BorderBrush" Value="{StaticResource HeaderBrush}" />
+                    <Setter Property="Margin" Value="5,1,11,1" />
+                </Style>
+                <Style x:Key="ColumnHeaderTextBlockStyle" TargetType="TextBlock">
+                    <Setter Property="Margin" Value="5,0" />
+                    <Setter Property="FontWeight" Value="Normal" />
+                    <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}" />
+                    <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}" />
+                </Style>
+            </Grid.Resources>
+            <!--  List Headers  -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="12*" />
+                    <ColumnDefinition Width="4*" />
+                </Grid.ColumnDefinitions>
+                <Grid.Resources>
+                    <Style BasedOn="{StaticResource ColumnHeaderBorderStyle}" TargetType="Border" />
+                    <Style BasedOn="{StaticResource ColumnHeaderTextBlockStyle}" TargetType="TextBlock" />
+                </Grid.Resources>
+                <Border Grid.Column="0">
+                    <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Title" />
+                </Border>
+                <Border Grid.Column="1">
+                    <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Data" />
+                </Border>
+                <Border Grid.Column="2">
+                    <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Last Updated" />
+                </Border>
+            </Grid>
+            <ScrollViewer Grid.Row="1" IsHitTestVisible="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}">
+                <ItemsControl ItemsSource="{x:Bind ViewModel.DataItems, Mode=OneWay}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="model:DataItem">
+                            <StackPanel Margin="0,2" Opacity="{Binding ElementName=ThisPage, Path=ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanOpacityInverse}}">
+                                <Grid x:Name="gridItem">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="12*" />
+                                        <ColumnDefinition Width="4*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                            <Setter Property="Margin" Value="10,1" />
+                                            <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}" />
+                                            <Setter Property="Foreground" Value="{ThemeResource PrimaryBrush}" />
+                                            <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}" />
+                                        </Style>
+                                    </Grid.Resources>
+                                    <TextBlock Grid.Column="0" Text="{x:Bind Title, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Data, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Updated, Mode=OneWay, Converter={StaticResource StringToFormat}, ConverterParameter='{}{0:ddd, dd MMM yyyy – hh:mm tt}'}" />
+                                </Grid>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+        </Grid>
+        <!--#endregion-->
+        <!--#endregion-->
+
+        <!--#region [Visual States]-->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <!--#region [Using a custom trigger]-->
+                <VisualState x:Name="CustomBusy">
+                    <VisualState.StateTriggers>
+                        <helper:CustomStateTrigger CurrentState="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!--  [Visuals]  -->
+                        <Setter Target="tbTitle.Text" Value="Running process..." />
+                        <!--  [Define new column widths]  -->
+                        <!--
+                       <Setter Target="rootGrid.ColumnDefinitions[0].Width" Value="9*" />
+                       <Setter Target="rootGrid.ColumnDefinitions[1].Width" Value="3*" />
+                        -->
+                        <!--  [Define new row heights]  -->
+                        <!--
+                       <Setter Target="rootGrid.RowDefinitions[0].Height" Value="35" />
+                       <Setter Target="rootGrid.RowDefinitions[1].Height" Value="2*" />
+                       <Setter Target="rootGrid.RowDefinitions[2].Height" Value="10*" />
+                       <Setter Target="rootGrid.RowDefinitions[3].Height" Value="0" />
+                        -->
+                        <!--  [Move some things around]  -->
+                        <!--
+                       <Setter Target="lvMessages.(Grid.Row)" Value="1" />
+                       <Setter Target="expander.(Grid.Row)" Value="3" />
+                        -->
+                        <!-- [Other example properties]
+                       <Setter Target="lvMessages.Background" Value="Green" />
+                       <Setter Target="expander.IsExpanded" Value="False" />
+                       <Setter Target="lvMessages.(RelativePanel.RightOf)" Value="expander" />
+                       <Setter Target="splitView.DisplayMode" Value="Inline" />
+                       <Setter Target="titleBarImage.Margin" Value="6,0,4,0" />
+                       <Setter Target="someButton.Style" Value="{StaticResource MyButtonStyle}" />
+                        -->
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CustomNotBusy">
+                    <VisualState.StateTriggers>
+                        <helper:CustomStateTrigger CurrentState="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanInverter}}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!--  [Visuals]  -->
+                        <Setter Target="tbTitle.Text" Value="Tab #2" />
+                        <!--  [Define new column widths]  -->
+                        <!--
+                       <Setter Target="rootGrid.ColumnDefinitions[0].Width" Value="9*" />
+                       <Setter Target="rootGrid.ColumnDefinitions[1].Width" Value="2*" />
+                        -->
+                        <!--  [Define new row heights]  -->
+                        <!--
+                       <Setter Target="rootGrid.RowDefinitions[0].Height" Value="35" />
+                       <Setter Target="rootGrid.RowDefinitions[1].Height" Value="2*" />
+                       <Setter Target="rootGrid.RowDefinitions[2].Height" Value="10*" />
+                       <Setter Target="rootGrid.RowDefinitions[3].Height" Value="0" />
+                        -->
+                        <!--  [Move some things around]  -->
+                        <!--
+                       <Setter Target="lvMessages.(Grid.Row)" Value="1" />
+                       <Setter Target="expander.(Grid.Row)" Value="3" />
+                        -->
+                        <!-- [Other example properties]
+                       <Setter Target="lvMessages.Background" Value="Green" />
+                       <Setter Target="expander.IsExpanded" Value="False" />
+                       <Setter Target="lvMessages.(RelativePanel.RightOf)" Value="expander" />
+                       <Setter Target="splitView.DisplayMode" Value="Inline" />
+                       <Setter Target="titleBarImage.Margin" Value="6,0,4,0" />
+                       <Setter Target="someButton.Style" Value="{StaticResource MyButtonStyle}" />
+                        -->
+                    </VisualState.Setters>
+                </VisualState>
+                <!--#endregion-->
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</Page>
