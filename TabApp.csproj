@@ -160,9 +160,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Behaviors\" />
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="Styles\Controls.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

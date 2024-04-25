@@ -61,7 +61,7 @@
             MinWidth="250"
             Margin="4"
             HorizontalAlignment="Right"
-            Content="Status Messages Here"
+            FontFamily="{StaticResource SecondaryFont}"
             IsOpen="False"
             Opacity="0"
             Severity="Informational">
@@ -90,6 +90,20 @@
             <InfoBar.RenderTransform>
                 <TranslateTransform x:Name="TranslationInfoBar" />
             </InfoBar.RenderTransform>
+            <InfoBar.IconSource>
+                <FontIconSource Foreground="{ThemeResource PrimaryBrush}" Glyph="{StaticResource ZeroBars}" />
+            </InfoBar.IconSource>
+            <InfoBar.Content>
+                <Grid Margin="10">
+                    <!--<Image Grid.Column="0" Width="24" Height="24" Source="/Assets/Important.png" Stretch="Uniform" />-->
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource SecondaryFont}"
+                        FontSize="{StaticResource FontSizeMedium}"
+                        Foreground="{x:Bind ViewModel.SelectedColor.Color, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
+                        Text="{x:Bind ViewModel.SelectedColor.Width, Mode=OneWay, Converter={StaticResource NumberToString}, ConverterParameter=Width ▸}" />
+                </Grid>
+            </InfoBar.Content>
         </InfoBar>
         <!--#endregion-->
 
@@ -131,11 +145,11 @@
                     </ListView.Transitions>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="model:NamedColor">
-                            <StackPanel Margin="-12,0,0,0" Orientation="Vertical">
+                            <StackPanel Margin="-14,0,0,0" Orientation="Vertical">
                                 <Grid ColumnDefinitions="1*,3*">
                                     <TextBlock
                                         Grid.Column="0"
-                                        Margin="2,0,0,4"
+                                        Margin="10,0,0,4"
                                         HorizontalAlignment="Left"
                                         FontFamily="{StaticResource SecondaryFont}"
                                         FontSize="{StaticResource FontSizeSmall}"
@@ -153,6 +167,7 @@
                                 <Rectangle
                                     Width="{Binding Width, Mode=OneWay}"
                                     Height="10"
+                                    Margin="8,0,0,0"
                                     HorizontalAlignment="Left"
                                     RadiusX="3"
                                     RadiusY="3"

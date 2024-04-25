@@ -3,8 +3,10 @@
     x:Class="TabApp.Views.Tab4Page"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:behave="using:TabApp.Behaviors"
     xmlns:ctrl="using:TabApp.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:interact="using:Microsoft.Xaml.Interactivity"
     xmlns:local="using:TabApp.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:TabApp.Models"
@@ -135,7 +137,48 @@
         </RelativePanel>
 
         <Grid Grid.Row="1" Margin="20,0,0,0">
-            <ctrl:SeparatorLine />
+            <StackPanel Orientation="Vertical">
+                <ctrl:SeparatorLine />
+                <TextBlock
+                    x:Name="url"
+                    Margin="5,10,5,20"
+                    FontSize="{StaticResource FontSizeSmall}"
+                    TextWrapping="WrapWholeWords">
+                    <interact:Interaction.Behaviors>
+                        <behave:HyperlinkTextBlockBehavior />
+                    </interact:Interaction.Behaviors>
+                </TextBlock>
+                <!--#region [custom divider]-->
+                <Grid
+                    Margin="2,0,20,0"
+                    ColumnSpacing="0"
+                    RowSpacing="0">
+                    <Rectangle
+                        Height="2"
+                        Margin="0,2,0,0"
+                        HorizontalAlignment="Stretch"
+                        RadiusX="4"
+                        RadiusY="4">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="1,0" EndPoint="1,1">
+                                <LinearGradientBrush.GradientStops>
+                                    <GradientStop Offset="0" Color="#FF76B9ED" />
+                                    <GradientStop Offset="0.2" Color="#6F76B9ED" />
+                                    <GradientStop Offset="1" Color="#2F76B9ED" />
+                                </LinearGradientBrush.GradientStops>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Rectangle
+                        Height="1"
+                        Margin="0,-2,0,0"
+                        HorizontalAlignment="Stretch"
+                        Fill="Gray"
+                        RadiusX="4"
+                        RadiusY="4" />
+                </Grid>
+                <!--#endregion-->
+            </StackPanel>
         </Grid>
 
     </Grid>

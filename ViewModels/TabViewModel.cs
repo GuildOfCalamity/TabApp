@@ -25,6 +25,7 @@ public class TabViewModel : ObservableRecipient
     int _maxCPU = 100;
     int _currentCPU = 0;
     bool _isBusy = false;
+    string _popupText = "...";
     DataItem? _selectedItem;
     static DispatcherTimer? _timer;
     SolidColorBrush _needleColor = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray);
@@ -84,6 +85,12 @@ public class TabViewModel : ObservableRecipient
         }
     }
 
+    public string PopupText
+    {
+        get => _popupText;
+        set => SetProperty(ref _popupText, value);
+    }
+
     public DataItem? SelectedItem
     {
         get => _selectedItem;
@@ -97,6 +104,7 @@ public class TabViewModel : ObservableRecipient
         get => _selectedColor;
         set 
         {
+            // Fire event after user selects list item.
             App.RootEventBus?.Publish("CPUEvent", value);
             SetProperty(ref _selectedColor, value); 
         }
@@ -106,7 +114,15 @@ public class TabViewModel : ObservableRecipient
 
     public ICommand SampleCommand { get; }
 
-    static readonly List<string> emojis = new List<string> { "✔️","👍","👌","🧹","🧯","🛒","💼","📁","📂","🗂️","🔨","⛏️","⚒️","🛠️","🗡️","⚔️","💣","🏹","🛡️","🔧","🔩","⚙️","🗜️","⚖️","🔗","⛓️","🧰","🧲","⚗️","🧪","🧫","🔬","🔭","📡","🔈","🔉","🔊","📢","📣","📯","🔔","🔕","🎼","🎵","🎶","🎙️","🎚️","🎛️","🎤","🎧","📻","🎷","🎸","🎹","🎺","🎻","🥁" };
+    static readonly List<string> emojis = new List<string> 
+    { 
+        "✔️","👍","👌","🧹","🧯","🛒","💼","🎛️","📂","🗂️",
+        "🔨","⛏️","⚒️","🛠️","🗡️","⚔️","💣","🏹","🛡️","🔧",
+        "🔩","⚙️","🗜️","⚖️","🔗","💰","🧰","🧲","📌","🧪",
+        "🧫","🔬","🔭","📡","🔈","🔉","🔊","📢","📣","📯",
+        "🔔","🔕","🎼","🎵","🎶","🎙️","🎚️","🎛️","🎤","🎧",
+        "📻","🎷","🎸","🗝️","🎺","🎻","⏰","📚","🖨️","📦"
+    };
     #endregion
 
     public TabViewModel()
@@ -147,7 +163,7 @@ public class TabViewModel : ObservableRecipient
                     var results = dir.GetFiles($"Tab*.*", SearchOption.TopDirectoryOnly);
                     foreach (var file in results)
                     {
-                        Debug.WriteLine($"📢 INFO {file.Name} ({file.FullName.GetFileVersion()})");
+                        AddDataItem($"📢 INFO", $"{file.Name}  v{file.FullName.GetFileVersion()}");
                     }
 
                     files.AddRange(dir.GetFiles($"TabApp.exe", SearchOption.AllDirectories));
@@ -155,16 +171,16 @@ public class TabViewModel : ObservableRecipient
                     files = files.Where(o => !o.FullName.Contains(Path.Combine(dir.FullName, ".backup"))).ToList();
                     foreach (var file in files)
                     {
-                        Debug.WriteLine($"📢 INFO {file.Name} ({file.FullName.GetFileVersion()})");
+                        AddDataItem($"📢 INFO", $"{file.Name}  v{file.FullName.GetFileVersion()}");
                     }
                 }
             }
             else
             {
-                Debug.WriteLine($"[WARNING] No action defined for type '{obj?.GetType()}'");
+                AddDataItem($"📢 WARNING", $"No action defined for type '{obj?.GetType()}'");
             }
 
-            await Task.Delay(3500);
+            await Task.Delay(3000);
 
             IsBusy = false;
         });
@@ -186,7 +202,7 @@ public class TabViewModel : ObservableRecipient
         if (_timer == null)
         {
             _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(3000);
+            _timer.Interval = TimeSpan.FromMilliseconds(2500);
             _timer.Tick += (_, _) =>
             {
                 if (!App.IsClosing)
@@ -240,13 +256,23 @@ public class TabViewModel : ObservableRecipient
     }
 
     #region [PerfCounter]
+    int _startupTest = 100;
     int _lastValue = -1;
-    float GetCPU(int maxClamp = 201)
+    bool _useLogarithm = true;
+    float GetCPU(int maxWidth = 200)
     {
         if (_perfCPU == null)
             return 0;
 
         float newValue = _perfCPU.NextValue();
+
+        // For testing each color range.
+        if (_startupTest > 0)
+        {
+            newValue = _startupTest;
+            _startupTest -= 20;
+        }
+
         switch (newValue)
         {
             case float f when f > 80: NeedleColor = _level6;
@@ -263,22 +289,66 @@ public class TabViewModel : ObservableRecipient
                 break;
         }
 
+        float width = 0;
+
         // Simple duplicate checking.
         if ((int)newValue != _lastValue)
         {
             _lastValue = (int)newValue;
 
             // Auto-size rectangle graphic.
-            var width = ((newValue + 1f) * 4f).Clamp(1, maxClamp);
+            if (_useLogarithm)
+            {
+                // This will give us a range scaled around 1 to 100, we'll then multiply by 2 to fit the width.
+                if (newValue < 1.1)
+                    width = MathF.Log(newValue + 2, 1.05f) * (maxWidth / 100f);
+                else
+                    width = MathF.Log(newValue, 1.05f) * (maxWidth / 100f);
+            }
+            else
+            {
+                width = AmplifyLinear(newValue);
+                Debug.WriteLine($"Input: {newValue:N1}, Output: {width:N1}");
+            }
 
             // Add entry for histogram.
             NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = NeedleColor.Color });
 
-            if (NamedColors.Count > 200)
+            // Monitor memory consumption.
+            if (NamedColors.Count > 300)
                 NamedColors.RemoveAt(NamedColors.Count - 1);
         }
 
         return newValue;
+
+    }
+
+    /// <summary>
+    /// Smaller values will be harder to see on the graph, so we'll scale them up to be more visible.
+    /// </summary>
+    float AmplifyLinear(float number, int maxClamp = 200)
+    {
+        if (number < 10)
+            return ((number + 1f) * 6f).Clamp(1, maxClamp);
+        else if (number < 20)
+            return ((number + 1f) * 5f).Clamp(1, maxClamp);
+        else if (number < 40)
+            return ((number + 1f) * 4f).Clamp(1, maxClamp);
+        else if (number < 60)
+            return ((number + 1f) * 3f).Clamp(1, maxClamp);
+        else if (number < 80)
+            return ((number + 1f) * 2.5f).Clamp(1, maxClamp);
+        else
+            return ((number + 1f) * 2f).Clamp(1, maxClamp);
+    }
+
+    float ScaleValue(float value, float multiply = 250F) => (value / 100F) * multiply;
+    float ScaleValue(float value, float min, float max) => (value - min) / (max - min) * (max - min) + min;
+    float AmplifyUsingLog(float number) => MathF.Exp(MathF.Log(number) * MathF.E / 2f);
+    float Vectorize(float begin, float end, int divy = 100)
+    {
+        var result = System.Numerics.Vector3.Dot(new System.Numerics.Vector3(begin, begin, 0), new System.Numerics.Vector3(end, end, 0));
+        return result > 0 ? result / divy : result;
     }
     #endregion
 }

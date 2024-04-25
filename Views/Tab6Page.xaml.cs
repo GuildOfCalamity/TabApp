@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -102,7 +102,7 @@ public sealed partial class Tab6Page : Page
             }
             else
             {
-                Debug.WriteLine($"[INFO] show count => {_showCount}");
+                Debug.WriteLine($"[INFO] show count ⇨ {_showCount}");
             }
         };
 
@@ -112,7 +112,7 @@ public sealed partial class Tab6Page : Page
     }
 
     /// <summary>
-    /// For <see cref="EventBus"/> model demonstration.
+    /// We'll only trigger the InfoBar when a <see cref="NamedColor"/> is selected in the ListView.
     /// </summary>
     void EventBusMessageHandler(object? sender, ObjectEventArgs e)
     {
@@ -127,7 +127,7 @@ public sealed partial class Tab6Page : Page
             {
                 if (App.AnimationsEffectsEnabled && !App.IsClosing)
                 {
-                    ibar.Content = $"Width => {(int)msg.Width}";
+                    ViewModel.PopupText = $"Width ⇨ {(int)msg.Width}";
 
                     StoryboardOpacity.Children[0].SetValue(DoubleAnimation.FromProperty, 0d);
                     StoryboardOpacity.Children[0].SetValue(DoubleAnimation.ToProperty, 1d);
@@ -173,14 +173,14 @@ public sealed partial class Tab6Page : Page
     #region [Overrides]
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
+        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingTo Source ⇨ {e.SourcePageType}");
         base.OnNavigatedTo(e);
         OpacityStoryboard.Begin();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
+        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingFrom Source ⇨ {e.SourcePageType}");
         OpacityStoryboard.SkipToFill();
         base.OnNavigatingFrom(e);
     }

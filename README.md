@@ -4,7 +4,7 @@
 
 ### 📝 v1.0.0.0 - April 2024
 
-* A simple tab-style navagation application demonstration with a custom styler.
+* A simple tab-style navigation application demonstration with a custom styler.
 
 * This project uses the following additional packages:
     - "CommunityToolkit.Mvvm" Version="8.2.2"

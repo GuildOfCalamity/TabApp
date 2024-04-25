@@ -33,6 +33,7 @@ public sealed partial class Tab4Page : Page
 
         ViewModel = App.GetService<TabViewModel>();
 
+        url.Text = "For more WinUI3 examples be sure to visit my github at https://github.com/GuildOfCalamity?tab=repositories";
     }
 
     #region [Overrides]

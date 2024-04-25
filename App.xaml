@@ -31,6 +31,12 @@
                     <local:StringFormatConverter x:Key="StringToFormat" />
                     <local:EnumToBooleanConverter x:Key="EnumToBoolean" />
                     <local:IsReadOnlyToBrushConverter x:Key="IsReadOnlyToBrush" />
+                    <local:ColorToBrushConverter x:Key="ColorToBrush" />
+                    <local:ColorToLighterColorConverter x:Key="ColorToLighterColor" />
+                    <local:ColorToDarkerColorConverter x:Key="ColorToDarkerColor" />
+                    <local:ColorToLighterBrushConverter x:Key="ColorToLighterBrush" />
+                    <local:ColorToDarkerBrushConverter x:Key="ColorToDarkerBrush" />
+                    <local:NumberToStringConverter x:Key="NumberToString" />
 
                     <!--
                         === MERGED DICTIONARIES ===

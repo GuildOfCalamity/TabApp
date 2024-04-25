@@ -112,7 +112,7 @@ namespace TabApp
                  // Dump all configs from Microsoft.Extensions.Configuration.IConfiguration
                  foreach (var cfg in context.Configuration.GetChildren())
                  {
-                     Debug.WriteLine($"[INFO] {cfg.Key} => {cfg.Value}");
+                     Debug.WriteLine($"[INFO] {cfg.Key} ⇨ {cfg.Value}");
                  }
             }).
             Build();
@@ -316,7 +316,7 @@ namespace TabApp
             Debug.WriteLine($"[ERROR] First chance exception from {sender?.GetType()}: {e.Exception.Message}");
             DebugLog($"First chance exception from {sender?.GetType()}: {e.Exception.Message}");
             if (e.Exception.InnerException != null)
-                DebugLog($"  => InnerException: {e.Exception.InnerException.Message}");
+                DebugLog($"  ⇨ InnerException: {e.Exception.InnerException.Message}");
             DebugLog($"First Chance Exception StackTrace: {Environment.StackTrace}");
             DebugLog($"{e.Exception.DumpFrames()}");
         }
@@ -476,7 +476,7 @@ namespace TabApp
         /// </summary>
         static void DialogDismissedHandler(IUICommand command)
         {
-            Debug.WriteLine($"UICommand.Label => {command.Label}");
+            Debug.WriteLine($"UICommand.Label ⇨ {command.Label}");
         }
 
         /// <summary>

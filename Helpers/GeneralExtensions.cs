@@ -1678,6 +1678,18 @@ public static class GeneralExtensions
     }
 
     /// <summary>
+    /// Multi-step clamping function.
+    /// </summary>
+    /// <param name="value">the value to test</param>
+    /// <param name="max">the final limit</param>
+    /// <returns>clamped <paramref name="value"/></returns>
+    public static float MultiClamp(this float value, float max)
+    {
+        while (value >= max) { value = value.Clamp(value, value / 1.5f); }
+        return value;
+    }
+
+    /// <summary>
     /// Scales a range of double. [baseMin to baseMax] will become [limitMin to limitMax]
     /// </summary>
     public static double Scale(this double valueIn, double baseMin, double baseMax, double limitMin, double limitMax) => ((limitMax - limitMin) * (valueIn - baseMin) / (baseMax - baseMin)) + limitMin;
@@ -1698,6 +1710,58 @@ public static class GeneralExtensions
     /// Linear interpolation for a range of floats.
     /// </summary>
     public static float Lerp(this float start, float end, float amount = 0.5F) => start + (end - start) * amount;
+
+    public static float LogLerp(this float start, float end, float percent, float logBase = 1.2F)
+    {
+        return start + (end - start) * (float)Math.Log(percent, logBase);
+        //return start + (end - start) * Math.Pow(percentage, logBase);
+        //return end - (end - start) * Math.Log(percentage, logBase);
+    }
+
+    /// <summary>
+    /// Used to gradually reduce the effect of certain changes over time.
+    /// </summary>
+    /// <param name="value">Some initial value, e.g. 40</param>
+    /// <param name="target">Where we want the value to end up, e.g. 100</param>
+    /// <param name="rate">How quickly we want to reach the target, e.g. 0.25</param>
+    /// <returns></returns>
+    public static float Dampen(this float value, float target, float rate)
+    {
+        float dampenedValue = value;
+        if (value != target)
+        {
+            float dampeningFactor = MathF.Pow(1 - MathF.Abs((value - target) / rate), 2);
+            dampenedValue = target + ((value - target) * dampeningFactor);
+        }
+        return dampenedValue;
+    }
+
+    public static float GetDecimalPortion(this float number)
+    {
+        // If the number is negative, make it positive.
+        if (number < 0)
+            number = -number;
+
+        // Get the integer portion of the number.
+        int integerPortion = (int)number;
+        
+        // Subtract the integer portion to get the decimal portion.
+        float decimalPortion = number - integerPortion;
+
+        return decimalPortion;
+    }
+
+    public static Windows.UI.Color[] CreateColorScale(int start, int end)
+    {
+        var colors = new Windows.UI.Color[end - start + 1];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            float factor = ((float)i / (end - start)) * 255; // map the position to 0-255
+            // Using red and green channels only.
+            colors[i] = Windows.UI.Color.FromArgb(255, (byte)(200 * factor), (byte)(255 - 10 * factor), 0); // create a color gradient from light to dark
+        }
+        return colors;
+    }
 
     /// <summary>
     /// Vector2 LERP function.
