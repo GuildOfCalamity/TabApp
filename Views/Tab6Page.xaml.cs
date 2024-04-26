@@ -66,6 +66,8 @@ public sealed partial class Tab6Page : Page
                 {
                     ibar.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                     {
+                        // TODO: Reentry animation handling.
+
                         if (App.AnimationsEffectsEnabled && !App.IsClosing)
                         {
                             StoryboardOpacity.Children[0].SetValue(DoubleAnimation.FromProperty, ibar.Opacity);
@@ -125,6 +127,8 @@ public sealed partial class Tab6Page : Page
             var msg = e.Payload as NamedColor;
             if (msg != null)
             {
+                // TODO: Reentry animation handling.
+
                 if (App.AnimationsEffectsEnabled && !App.IsClosing)
                 {
                     ViewModel.PopupText = $"Width ⇨ {(int)msg.Width}";

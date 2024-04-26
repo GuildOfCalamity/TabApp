@@ -7,6 +7,7 @@
     xmlns:ctrl="using:TabApp.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:interact="using:Microsoft.Xaml.Interactivity"
+    xmlns:interactcore="using:Microsoft.Xaml.Interactions.Core"
     xmlns:local="using:TabApp.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:TabApp.Models"
@@ -26,6 +27,22 @@
                 Duration="0:0:1.2" />
         </Storyboard>
     </Page.Resources>
+
+    <interact:Interaction.Behaviors>
+        <!--
+            [FrameworkElement Events]
+            Loaded
+            Loading
+            Unloaded
+            DataContextChanged
+            EffectiveViewportChanged
+            LayoutUpdated
+            SizeChanged
+        -->
+        <interactcore:EventTriggerBehavior EventName="Loading">
+            <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.SampleCommand}" CommandParameter="PageLoading" />
+        </interactcore:EventTriggerBehavior>
+    </interact:Interaction.Behaviors>
 
     <Grid
         x:Name="root"
@@ -57,7 +74,8 @@
                 <TextBlock
                     Margin="20,10"
                     FontSize="{StaticResource FontSizeHuge}"
-                    Text="Tab #4" />
+                    Text="Tab #4"
+                    TextTrimming="CharacterEllipsis" />
 
                 <StackPanel
                     Margin="20,10"
@@ -66,7 +84,7 @@
                     <Button
                         Command="{x:Bind ViewModel.SampleCommand}"
                         CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Mode=OneWay}"
-                        Content="Search"
+                        Content="Sample Command"
                         IsEnabled="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
                         Style="{StaticResource EnhancedButtonStyle}" />
                     <ProgressRing
@@ -78,14 +96,79 @@
                         Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanVisibility}, ConverterParameter=False}" />
                 </StackPanel>
 
-                <StackPanel
-                    Margin="20,10"
-                    Orientation="Horizontal"
-                    Spacing="5">
-                    <ToggleSwitch Header="Option #1" IsOn="{x:Bind ViewModel.Option1, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Option #2" IsOn="{x:Bind ViewModel.Option2, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Option #3" IsOn="{x:Bind ViewModel.Option3, Mode=TwoWay}" />
-                </StackPanel>
+                <AutoSuggestBox
+                    x:Name="asb"
+                    MinWidth="200"
+                    Margin="24,20"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Header="I'll guess your first name"
+                    PlaceholderText="Start typing"
+                    QueryIcon="Find"
+                    QuerySubmitted="AutoSuggestBox_QuerySubmitted"
+                    SuggestionChosen="AutoSuggestBox_SuggestionChosen">
+                    <interact:Interaction.Behaviors>
+                        <behave:AutoFocusBehavior />
+                        <behave:TypingPauseBehavior
+                            MinimumCharacters="1"
+                            MinimumDelay="500"
+                            TypingPaused="AutoSuggestBox_TypingPaused" />
+                    </interact:Interaction.Behaviors>
+                </AutoSuggestBox>
+
+                <ctrl:GroupBox
+                    MinWidth="400"
+                    Margin="24,20"
+                    HorizontalAlignment="Left"
+                    BorderBrush="{ThemeResource SecondaryBorderBrush}"
+                    FontSize="{StaticResource FontSizeMedium}">
+                    <ctrl:GroupBox.Heading>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Margin="0,0,5,0" Text="KeyDown Behavior" />
+                            <!--  https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.symbol?view=windows-app-sdk-1.5#fields  -->
+                            <SymbolIcon
+                                VerticalAlignment="Bottom"
+                                Foreground="{ThemeResource SecondaryBrush}"
+                                Symbol="Keyboard" />
+                        </StackPanel>
+                    </ctrl:GroupBox.Heading>
+                    <!--#region [Behavior Testing]-->
+                    <TextBox
+                        MinWidth="370"
+                        Margin="6"
+                        PlaceholderText="Set the focus to this TextBox and press [Enter]"
+                        Text="{x:Bind ViewModel.Counter, Mode=OneWay}">
+                        <interact:Interaction.Behaviors>
+                            <behave:KeyDownTriggerBehavior Key="Enter">
+                                <interactcore:CallMethodAction MethodName="IncrementCount" TargetObject="{x:Bind}" />
+                                <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.SampleCommand}" CommandParameter="{x:Bind}" />
+                                <!--<interactcore:ChangePropertyAction
+                                    PropertyName="MinWidth"
+                                    TargetObject="{x:Bind asb}"
+                                    Value="300" />-->
+                            </behave:KeyDownTriggerBehavior>
+                            <interactcore:EventTriggerBehavior EventName="PointerEntered">
+                                <interactcore:ChangePropertyAction
+                                    PropertyName="MinWidth"
+                                    TargetObject="{x:Bind asb}"
+                                    Value="300" />
+                            </interactcore:EventTriggerBehavior>
+                            <interactcore:EventTriggerBehavior EventName="PointerExited">
+                                <interactcore:ChangePropertyAction
+                                    PropertyName="MinWidth"
+                                    TargetObject="{x:Bind asb}"
+                                    Value="200" />
+                            </interactcore:EventTriggerBehavior>
+                            <interactcore:EventTriggerBehavior EventName="PointerCanceled">
+                                <interactcore:ChangePropertyAction
+                                    PropertyName="MinWidth"
+                                    TargetObject="{x:Bind asb}"
+                                    Value="100" />
+                            </interactcore:EventTriggerBehavior>
+                        </interact:Interaction.Behaviors>
+                    </TextBox>
+                    <!--#endregion-->
+                </ctrl:GroupBox>
             </StackPanel>
             <!--#endregion-->
 
@@ -129,7 +212,8 @@
                         VerticalAlignment="Center"
                         FontSize="14"
                         Foreground="{ThemeResource PrimaryBrush}"
-                        Text="{x:Bind root:AssemblyHelper.GetVersion()}" />
+                        Text="{x:Bind root:AssemblyHelper.GetVersion()}"
+                        TextTrimming="CharacterEllipsis" />
                 </Grid>
             </StackPanel>
             <!--#endregion-->
@@ -143,6 +227,7 @@
                     x:Name="url"
                     Margin="5,10,5,20"
                     FontSize="{StaticResource FontSizeSmall}"
+                    TextTrimming="CharacterEllipsis"
                     TextWrapping="WrapWholeWords">
                     <interact:Interaction.Behaviors>
                         <behave:HyperlinkTextBlockBehavior />

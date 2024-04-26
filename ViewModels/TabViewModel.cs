@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using TabApp.Models;
+using Windows.Foundation.Collections;
 
 namespace TabApp.ViewModels;
 
@@ -24,6 +25,7 @@ public class TabViewModel : ObservableRecipient
     bool _option3 = true;
     int _maxCPU = 100;
     int _currentCPU = 0;
+    int _counter = 0;
     bool _isBusy = false;
     string _popupText = "...";
     DataItem? _selectedItem;
@@ -73,6 +75,12 @@ public class TabViewModel : ObservableRecipient
     {
         get => _currentCPU;
         set => SetProperty(ref _currentCPU, value);
+    }
+
+    public int Counter
+    {
+        get => _counter;
+        set => SetProperty(ref _counter, value);
     }
 
     public bool IsBusy
@@ -175,6 +183,22 @@ public class TabViewModel : ObservableRecipient
                     }
                 }
             }
+            else if (obj is Page pg)
+            {
+                if (pg != null)
+                    AddDataItem($"📢 INFO", $"Got Page (using font {pg.FontFamily.Source})");
+            }
+            else if (obj is String str)
+            {
+                if (!string.IsNullOrEmpty(str))
+                    AddDataItem($"📢 INFO", $"Got Behavior event \"{str}\"");
+            }
+            else if (obj is Microsoft.Xaml.Interactions.Core.InvokeCommandAction cmd)
+            {
+                if (cmd != null)
+                    AddDataItem($"📢 INFO", $"Got Behavior InvokeCommandAction");
+                
+            }
             else
             {
                 AddDataItem($"📢 WARNING", $"No action defined for type '{obj?.GetType()}'");
@@ -202,7 +226,7 @@ public class TabViewModel : ObservableRecipient
         if (_timer == null)
         {
             _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(2500);
+            _timer.Interval = TimeSpan.FromMilliseconds(2000);
             _timer.Tick += (_, _) =>
             {
                 if (!App.IsClosing)
@@ -218,9 +242,11 @@ public class TabViewModel : ObservableRecipient
 
     void AddDataItem(string title, string text)
     {
+        var di = new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now, Updated = DateTime.Now };
+        App.RootEventBus.Publish("ItemAddedEvent", di);
         App.MainDispatcher?.CallOnUIThread(() => 
         { 
-            DataItems.Add(new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now, Updated = DateTime.Now });
+            DataItems.Add(di);
         });
     }
 
@@ -299,17 +325,22 @@ public class TabViewModel : ObservableRecipient
             // Auto-size rectangle graphic.
             if (_useLogarithm)
             {
+                //width = ScaleValueLog(newValue);
+                width = ScaleValueLog2(newValue);
+
                 // This will give us a range scaled around 1 to 100, we'll then multiply by 2 to fit the width.
-                if (newValue < 1.1)
-                    width = MathF.Log(newValue + 2, 1.05f) * (maxWidth / 100f);
-                else
-                    width = MathF.Log(newValue, 1.05f) * (maxWidth / 100f);
+                //if (newValue < 1.1)
+                //    width = MathF.Log(newValue + 2, 1.05f) * (maxWidth / 100f);
+                //else
+                //    width = MathF.Log(newValue, 1.05f) * (maxWidth / 100f);
             }
             else
             {
                 width = AmplifyLinear(newValue);
-                Debug.WriteLine($"Input: {newValue:N1}, Output: {width:N1}");
             }
+
+            string format = "[INFO] {0,-15} {1,-15}"; //negative left-justifies, while positive right-justifies
+            Debug.WriteLine(String.Format(format, $"Input: {newValue:N1}", $"Output: {width:N1}"));
 
             // Add entry for histogram.
             NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = NeedleColor.Color });
@@ -321,6 +352,25 @@ public class TabViewModel : ObservableRecipient
 
         return newValue;
 
+    }
+
+    #region [Scaling and Clamping]
+    /// <summary>
+    /// Values of one or below will result in zero.
+    /// </summary>
+    /// <param name="value">0 to 100</param>
+    /// <returns>scaled amount</returns>
+    float ScaleValueLog(float value) => MathF.Log(value < 1.1f ? 1.1f : value, 10f) * 100f;
+
+    float ScaleValueLog2(float value)
+    {
+        // Clamp value between 1 and 100
+        value = Math.Clamp(value, 1f, 100f);
+
+        // Scale the value logarithmically to a range between 1 and 200
+        float scaledValue = (float)(1 + (199 * Math.Log10(1 + (10 * value / 100)) / Math.Log10(11)));
+
+        return scaledValue;
     }
 
     /// <summary>
@@ -341,14 +391,15 @@ public class TabViewModel : ObservableRecipient
         else
             return ((number + 1f) * 2f).Clamp(1, maxClamp);
     }
-
     float ScaleValue(float value, float multiply = 250F) => (value / 100F) * multiply;
     float ScaleValue(float value, float min, float max) => (value - min) / (max - min) * (max - min) + min;
     float AmplifyUsingLog(float number) => MathF.Exp(MathF.Log(number) * MathF.E / 2f);
-    float Vectorize(float begin, float end, int divy = 100)
+    float ScaleValueVector(float begin, float end, int divy = 100)
     {
         var result = System.Numerics.Vector3.Dot(new System.Numerics.Vector3(begin, begin, 0), new System.Numerics.Vector3(end, end, 0));
         return result > 0 ? result / divy : result;
     }
+    #endregion
+
     #endregion
 }

@@ -180,12 +180,13 @@
                     </Border>
                 </Grid>
                 <!--#endregion-->
-                
+
                 <!--#region [Content]-->
                 <ListView
                     x:Name="DataListView"
                     Grid.Row="1"
                     VerticalAlignment="Stretch"
+                    helper:ScrollViewerExtensions.VerticalScrollBarMargin="{Binding MinHeight, ElementName=gridItem, Converter={StaticResource DoubleTopThickness}}"
                     IsHitTestVisible="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
                     ItemsSource="{x:Bind ViewModel.DataItems, Mode=OneWay}"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"

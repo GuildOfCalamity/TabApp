@@ -38,10 +38,15 @@ public sealed partial class Tab1Page : Page
         // Ensure that the Page is only created once, and cached during navigation.
         this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
+        DataListView.Loaded += DataListView_Loaded;
+
         ViewModel = App.GetService<TabViewModel>();
 
         if (!App.RootEventBus.IsSubscribed("BusyEvent"))
             App.RootEventBus.Subscribe("BusyEvent", EventBusMessageHandler);
+
+        if (!App.RootEventBus.IsSubscribed("ItemAddedEvent"))
+            App.RootEventBus.Subscribe("ItemAddedEvent", ItemAddedEventBusMessage);
 
         #region [Animated InfoBar]
         ibar.Closing += (s, e) =>
@@ -109,6 +114,30 @@ public sealed partial class Tab1Page : Page
             }
         };
         #endregion
+    }
+
+    /// <summary>
+    /// A crude auto-scroll technique.
+    /// </summary>
+    void ItemAddedEventBusMessage(object? sender, ObjectEventArgs e)
+    {
+        if (e.Payload == null)
+        {
+            Debug.WriteLine($"[WARNING] Received null event bus object!");
+        }
+        else if (e.Payload?.GetType() == typeof(DataItem))
+        {
+            Debug.WriteLine($"[INFO] Scrolling to {((DataItem)e.Payload).Data}");
+            //DataListView.ScrollIntoView(DataListView.Items.Count);
+            DataListView.DispatcherQueue.TryEnqueue(() =>
+            {
+                int selectedIndex = DataListView.Items.Count - 1;
+                if (selectedIndex < 0) { return; }
+                DataListView.SelectedIndex = selectedIndex;
+                DataListView.UpdateLayout();
+                DataListView.ScrollIntoView((DataItem)DataListView.SelectedItem);
+            });
+        }
     }
 
     /// <summary>
@@ -216,5 +245,20 @@ public sealed partial class Tab1Page : Page
                 }
             }
         }
+
+        //scrollViewer.ChangeView(horizontalOffset: 0, verticalOffset: scrollViewer.ScrollableHeight, zoomFactor: 1, disableAnimation: true);
+    }
+
+    /// <summary>
+    /// Auto-scroll to last item in the list.
+    /// </summary>
+    void DataListView_Loaded(object sender, RoutedEventArgs e)
+    {
+        var dlv = (ListView)sender;
+        
+        if (dlv == null)
+            return;
+
+        DataListView.ScrollIntoView(dlv.Items.LastOrDefault());
     }
 }

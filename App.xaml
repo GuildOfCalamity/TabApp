@@ -37,6 +37,7 @@
                     <local:ColorToLighterBrushConverter x:Key="ColorToLighterBrush" />
                     <local:ColorToDarkerBrushConverter x:Key="ColorToDarkerBrush" />
                     <local:NumberToStringConverter x:Key="NumberToString" />
+                    <local:DoubleTopThicknessConverter x:Key="DoubleTopThickness" />
 
                     <!--
                         === MERGED DICTIONARIES ===

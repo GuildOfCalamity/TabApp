@@ -9,6 +9,11 @@ namespace TabApp.Behaviors;
 /// Parts of this code borrowed from https://xamlbrewer.wordpress.com/2023/01/16/xaml-behaviors-and-winui-3/
 /// Fixed nullability and added checks.
 /// </summary>
+/// <remarks>
+/// The <b>AssociatedObject</b> is the inherited object from the
+/// <see cref="Microsoft.Xaml.Interactivity.Behavior{T}"/> class 
+/// which can represent any <see cref="DependencyObject"/>.
+/// </remarks>
 public class TypingPauseBehavior : Behavior<AutoSuggestBox>
 {
     private DispatcherTimer? timer;
@@ -44,7 +49,11 @@ public class TypingPauseBehavior : Behavior<AutoSuggestBox>
 
         AssociatedObject.TextChanged -= AssociatedObject_TextChanged;
         if (timer != null)
+        {
+            timer.Stop();
             timer.Tick -= OnTimerTick;
+            timer = null;
+        }
     }
 
     private void AssociatedObject_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

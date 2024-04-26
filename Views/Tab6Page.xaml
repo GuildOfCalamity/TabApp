@@ -123,7 +123,7 @@
                 <ctrl:GroupBox.Heading>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Margin="0,0,5,0" Text="Histogram" />
-                        <!--  https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.symbol?view=windows-app-sdk-1.5  -->
+                        <!--  https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.symbol?view=windows-app-sdk-1.5#fields  -->
                         <SymbolIcon Foreground="{ThemeResource SecondaryBrush}" Symbol="ZeroBars" />
                     </StackPanel>
                 </ctrl:GroupBox.Heading>
