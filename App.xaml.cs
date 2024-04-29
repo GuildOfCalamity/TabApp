@@ -15,6 +15,7 @@ using Windows.UI.Popups;
 using Windows.UI.ViewManagement;
 
 using TabApp.ViewModels;
+using System.Threading;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,6 +36,14 @@ namespace TabApp
         public static FrameworkElement? MainRoot { get; set; }
         public static bool IsClosing { get; set; } = false;
         public static Microsoft.UI.Dispatching.DispatcherQueue? MainDispatcher { get; set; }
+
+        public static event Action<string> OnWindowClosing = (time) => { };
+        public static event Action<string> OnWindowDestroying = (time) => { };
+        public static event Action<Microsoft.UI.Windowing.OverlappedPresenter> OnWindowMinMax = (presenter) => { };
+        public static event Action<Microsoft.UI.Windowing.OverlappedPresenter> OnWindowOrderChanged = (presenter) => { };
+        public static event Action<Windows.Graphics.PointInt32> OnWindowMove = (point) => { };
+        public static event Action<Windows.Graphics.SizeInt32> OnWindowSizeChanged = (size) => { };
+
         public static EventBus RootEventBus { get; set; } = new();
         /// <summary>
         /// The .NET Microsoft.Extensions.Hosting.Host provides dependency injection, configuration, logging, and other services.
@@ -145,7 +154,47 @@ namespace TabApp
             if (appWin != null)
             {
                 // We don't have the Closing event exposed by default, so we'll use the AppWindow object to compensate.
-                appWin.Closing += (s, e) => { App.IsClosing = true; };
+                appWin.Closing += (s, e) => 
+                { 
+                    App.IsClosing = true;
+                    OnWindowClosing?.Invoke(DateTime.Now.ToString("hh:mm:ss.fff tt"));
+                };
+
+                appWin.Destroying += (s, e) =>
+                {
+                    OnWindowDestroying?.Invoke(DateTime.Now.ToString("hh:mm:ss.fff tt"));
+                };
+
+                appWin.Changed += (s, args) =>
+                {
+                    /*
+                    {args.DidPositionChange}    // happens on a move
+                    {args.DidPresenterChange}   // happens on a maximize/minimize
+                    {args.DidZOrderChange}      // happens on a foreground change
+                    {args.DidSizeChange}        // happens on size change
+                    {args.DidVisibilityChange}  // happens on AppWindow visibility
+                    */
+
+                    // Signal any listening events...
+                    if (args.DidPresenterChange) 
+                    {
+                        if (s.Presenter is not null && s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
+                        {
+                            Debug.WriteLine($"[INFO] OnWindowMinMax: {op.State}");
+                            OnWindowMinMax?.Invoke(op);
+                        }
+                    }
+                    if (args.DidZOrderChange) 
+                    {
+                        if (s.Presenter is not null && s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
+                        {
+                            Debug.WriteLine($"[INFO] OnWindowOrderChanged: {op.State}");
+                            OnWindowOrderChanged?.Invoke(op);
+                        }
+                    }
+                    if (args.DidPositionChange) { OnWindowMove?.Invoke(s.Position); }
+                    if (args.DidSizeChange) { OnWindowSizeChanged?.Invoke(s.Size); }
+                };
 
                 if (IsPackaged)
                     appWin.SetIcon(System.IO.Path.Combine(Windows.ApplicationModel.Package.Current.InstalledLocation.Path, "Assets/TabIcon.ico"));
@@ -397,6 +446,8 @@ namespace TabApp
         }
 
         #region [Dialog Helpers]
+        static SemaphoreSlim semaSlim = new SemaphoreSlim(1, 1);
+
         /// <summary>
         /// The <see cref="Windows.UI.Popups.MessageDialog"/> does not look as nice as the
         /// <see cref="Microsoft.UI.Xaml.Controls.ContentDialog"/> and is not part of the native Microsoft.UI.Xaml.Controls.
@@ -493,6 +544,8 @@ namespace TabApp
         {
             if (App.MainRoot?.XamlRoot == null) { return; }
 
+            await semaSlim.WaitAsync(); // COMException: Only one ContentDialog may be opened at a time.
+
             #region [Initialize Assets]
             double fontSize = 16;
             Microsoft.UI.Xaml.Media.FontFamily fontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas");
@@ -552,22 +605,33 @@ namespace TabApp
                 RequestedTheme = App.MainRoot?.ActualTheme ?? ElementTheme.Default
             };
 
-            ContentDialogResult result = await contentDialog.ShowAsync();
-
-            switch (result)
+            try
             {
-                case ContentDialogResult.Primary:
-                    onPrimary?.Invoke();
-                    break;
-                //case ContentDialogResult.Secondary:
-                //    onSecondary?.Invoke();
-                //    break;
-                case ContentDialogResult.None: // Cancel
-                    onCancel?.Invoke();
-                    break;
-                default:
-                    Debug.WriteLine($"Dialog result not defined.");
-                    break;
+                ContentDialogResult result = await contentDialog.ShowAsync();
+
+                switch (result)
+                {
+                    case ContentDialogResult.Primary:
+                        onPrimary?.Invoke();
+                        break;
+                    //case ContentDialogResult.Secondary:
+                    //    onSecondary?.Invoke();
+                    //    break;
+                    case ContentDialogResult.None: // Cancel
+                        onCancel?.Invoke();
+                        break;
+                    default:
+                        Debug.WriteLine($"Dialog result not defined.");
+                        break;
+                }
+            }
+            catch (System.Runtime.InteropServices.COMException ex)
+            {
+                Debug.WriteLine($"[ERROR] ShowDialogBox: {ex.Message}");
+            }
+            finally
+            {
+                semaSlim.Release();
             }
         }
         #endregion

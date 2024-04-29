@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Linq;
@@ -12,6 +13,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using TabApp;
 using TabApp.Models;
 using Windows.Foundation.Collections;
 
@@ -28,8 +30,10 @@ public class TabViewModel : ObservableRecipient
     int _counter = 0;
     bool _isBusy = false;
     string _popupText = "...";
+    SystemStates _systemState = SystemStates.None;
     DataItem? _selectedItem;
     static DispatcherTimer? _timer;
+    static bool _verbose = false;
     SolidColorBrush _needleColor = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray);
     // Only possible due to our System.Diagnostics.PerformanceCounter NuGet (sadly .NET Core does not offer the PerformanceCounter)
     System.Diagnostics.PerformanceCounter? _perfCPU;
@@ -45,6 +49,12 @@ public class TabViewModel : ObservableRecipient
     {
         get => _needleColor;
         set => SetProperty(ref _needleColor, value);
+    }
+
+    public SystemStates SystemState
+    {
+        get => _systemState;
+        set => SetProperty(ref _systemState, value);
     }
 
     public bool Option1
@@ -88,6 +98,11 @@ public class TabViewModel : ObservableRecipient
         get => _isBusy;
         set
         {
+            if (value)
+                SystemState = SystemStates.Processing;
+            else
+                SystemState = SystemStates.Ready;
+
             App.RootEventBus?.Publish("BusyEvent", value);
             SetProperty(ref _isBusy, value);
         }
@@ -139,7 +154,16 @@ public class TabViewModel : ObservableRecipient
 
         Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
+        App.OnWindowClosing += App_OnWindowClosing;
+
+        if (!App.RootEventBus.IsSubscribed("WindowVisibilityEvent"))
+            App.RootEventBus.Subscribe("WindowVisibilityEvent", EventBusMessageHandler);
+
+        SystemState = SystemStates.Init;
+
         DataItems = GenerateDefaultItems();
+
+        Debug.WriteLine($"[INFO] DispatcherShutdownMode is {(Application.Current as App)?.DispatcherShutdownMode}");
 
         // Sample command for flyouts, et al.
         SampleCommand = new RelayCommand<object>(async (obj) =>
@@ -213,7 +237,9 @@ public class TabViewModel : ObservableRecipient
         Task.Run(() =>
         {
             if (_perfCPU == null)
+            {
                 _perfCPU = new System.Diagnostics.PerformanceCounter("Processor Information", "% Processor Time", "_Total", true);
+            }
         });
 
         // CPU usage with RadialGauge.
@@ -230,24 +256,65 @@ public class TabViewModel : ObservableRecipient
             _timer.Tick += (_, _) =>
             {
                 if (!App.IsClosing)
-                {
                     CurrentCPU = (int)GetCPU();
-                }
+                else
+                    _timer?.Stop();
             };
-            _timer.Start();
+            _timer?.Start();
         }
+
+        SystemState = SystemStates.Ready;
+
+        #region [Heartbeat Simulation]
+        //ThreadPool.QueueUserWorkItem((object? state) =>
+        //{
+        //    while (!App.IsClosing)
+        //    {
+        //        App.MainDispatcher?.CallOnUIThread(() => { SystemState = SystemStates.Processing; });
+        //        Thread.Sleep(1000);
+        //        App.MainDispatcher?.CallOnUIThread(() => { SystemState = SystemStates.None; });
+        //        Thread.Sleep(3000);
+        //    }
+        //    Debug.WriteLine($"[INFO] Heartbeat thread loop exit.");
+        //});
+        #endregion
 
         Debug.WriteLine($"[INFO] {nameof(TabViewModel)} took {App.GetStopWatch().TotalMilliseconds:N1} milliseconds");
     }
 
+    /// <summary>
+    /// For <see cref="EventBus"/> model demonstration.
+    /// </summary>
+    void EventBusMessageHandler(object? sender, ObjectEventArgs e)
+    {
+        if (e.Payload == null)
+        {
+            Debug.WriteLine($"[WARNING] Received null event bus object!");
+        }
+        else if (e.Payload?.GetType() == typeof(Boolean)) // IsVisible
+        {
+            // We'll only run CPU timer when not minimized.
+            if (!(bool)e.Payload)
+                _timer?.Stop();
+            else
+                _timer?.Start();
+        }
+    }
+
+    void App_OnWindowClosing(string obj)
+    {
+        App.MainDispatcher?.CallOnUIThread(() => { SystemState = SystemStates.Shutdown; });
+    }
+
+    /// <summary>
+    /// We're using this to send a signal to the UI that an item has 
+    /// been added so common routines like auto-scroll can be picked up.
+    /// </summary>
     void AddDataItem(string title, string text)
     {
         var di = new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now, Updated = DateTime.Now };
         App.RootEventBus.Publish("ItemAddedEvent", di);
-        App.MainDispatcher?.CallOnUIThread(() => 
-        { 
-            DataItems.Add(di);
-        });
+        App.MainDispatcher?.CallOnUIThread(() => { DataItems.Add(di); });
     }
 
     /// <summary>
@@ -339,8 +406,11 @@ public class TabViewModel : ObservableRecipient
                 width = AmplifyLinear(newValue);
             }
 
-            string format = "[INFO] {0,-15} {1,-15}"; //negative left-justifies, while positive right-justifies
-            Debug.WriteLine(String.Format(format, $"Input: {newValue:N1}", $"Output: {width:N1}"));
+            if (_verbose)
+            {
+                string format = "[INFO] {0,-15} {1,-15}"; //negative left-justifies, positive right-justifies
+                Debug.WriteLine(String.Format(format, $"Input: {newValue:N1}", $"Output: {width:N1}"));
+            }
 
             // Add entry for histogram.
             NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = NeedleColor.Color });
@@ -351,7 +421,6 @@ public class TabViewModel : ObservableRecipient
         }
 
         return newValue;
-
     }
 
     #region [Scaling and Clamping]

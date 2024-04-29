@@ -203,14 +203,14 @@ public sealed partial class Tab1Page : Page
     #region [Overrides]
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingTo");
+        Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
         base.OnNavigatedTo(e);
         OpacityStoryboard.Begin();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingFrom");
+        Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
         OpacityStoryboard.SkipToFill();
         base.OnNavigatingFrom(e);
     }
@@ -219,9 +219,6 @@ public sealed partial class Tab1Page : Page
     void DataListViewSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         //VisualStateManager.GoToState(sender as Control, "Selected", false);
-
-        if (!ViewModel.Option1)
-            return;
 
         // The IList<T> generic interface is a descendant of the ICollection<T>
         // generic interface and is the base interface of all generic lists.
@@ -240,8 +237,15 @@ public sealed partial class Tab1Page : Page
 
                 if (!string.IsNullOrEmpty(di.Data))
                 {
-                    _ = App.ShowDialogBox($"{di.Title}", $"{di.Data}{Environment.NewLine}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null, new Uri("ms-appx:///Assets/Details.png"));
-                    //_ = App.ShowMessageBox($"{di.Title}", $"{di.Data}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null);
+                    if (!ViewModel.Option1)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        _ = App.ShowDialogBox($"{di.Title}", $"{di.Data}{Environment.NewLine}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null, new Uri("ms-appx:///Assets/Details.png"));
+                        //_ = App.ShowMessageBox($"{di.Title}", $"{di.Data}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null);
+                    }
                 }
             }
         }

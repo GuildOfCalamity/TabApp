@@ -38,6 +38,7 @@
                     <local:ColorToDarkerBrushConverter x:Key="ColorToDarkerBrush" />
                     <local:NumberToStringConverter x:Key="NumberToString" />
                     <local:DoubleTopThicknessConverter x:Key="DoubleTopThickness" />
+                    <local:StateToImageConverter x:Key="StateToImage" />
 
                     <!--
                         === MERGED DICTIONARIES ===

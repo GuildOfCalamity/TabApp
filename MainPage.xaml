@@ -45,35 +45,53 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <!--#region [Dropdown-style Menu]-->
-        <MenuBar Grid.Row="0">
-            <MenuBarItem Title="File">
-                <MenuFlyoutItem Text="Create New" />
-                <MenuFlyoutItem Text="Open Existing" />
-                <MenuFlyoutItem Click="mfiExitClick" Text="Exit" />
-            </MenuBarItem>
-            <MenuBarItem Title="View">
-                <MenuFlyoutSubItem Text="Orientation">
-                    <MenuFlyoutItem Text="Horizontal" />
-                    <MenuFlyoutItem Text="Vertical" />
-                </MenuFlyoutSubItem>
-            </MenuBarItem>
-            <MenuBarItem Title="Select">
-                <MenuFlyoutSubItem Text="Tabs">
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab1" />
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab2" />
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab3" />
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab4" />
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab5" />
-                    <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab6" />
-                </MenuFlyoutSubItem>
-            </MenuBarItem>
-            <MenuBarItem Title="Help">
-                <MenuFlyoutItem Text="Documentation" />
-                <MenuFlyoutItem Text="About" />
-            </MenuBarItem>
-        </MenuBar>
-        <!--#endregion-->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            <!--#region [Dropdown-style Menu]-->
+            <MenuBar Grid.Column="0">
+                <MenuBarItem Title="File">
+                    <MenuFlyoutItem Text="Create New" />
+                    <MenuFlyoutItem Text="Open Existing" />
+                    <MenuFlyoutItem Click="mfiExitClick" Text="Exit" />
+                </MenuBarItem>
+                <MenuBarItem Title="View">
+                    <MenuFlyoutSubItem Text="Orientation">
+                        <MenuFlyoutItem Text="Horizontal" />
+                        <MenuFlyoutItem Text="Vertical" />
+                    </MenuFlyoutSubItem>
+                </MenuBarItem>
+                <MenuBarItem Title="Select">
+                    <MenuFlyoutSubItem Text="Tabs">
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab1" />
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab2" />
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab3" />
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab4" />
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab5" />
+                        <MenuFlyoutItem Click="MenuItemTabClick" Text="Tab6" />
+                    </MenuFlyoutSubItem>
+                </MenuBarItem>
+                <MenuBarItem Title="Help">
+                    <MenuFlyoutItem Text="Documentation" />
+                    <MenuFlyoutItem Text="About" />
+                </MenuBarItem>
+            </MenuBar>
+            <!--#endregion-->
+
+            <!--  https://github.com/microsoft/microsoft-ui-xaml/issues/8750  -->
+            <Image
+                Grid.Column="1"
+                Width="30"
+                Height="30"
+                Margin="0,2,8,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Source="{x:Bind ViewModel.SystemState, Mode=OneWay, Converter={StaticResource StateToImage}}"
+                Stretch="UniformToFill"
+                ToolTipService.ToolTip="System State" />
+        </Grid>
         <NavigationView
             x:Name="TabNavigationView"
             Grid.Row="1"

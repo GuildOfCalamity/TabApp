@@ -177,14 +177,14 @@ public sealed partial class Tab6Page : Page
     #region [Overrides]
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingTo Source ⇨ {e.SourcePageType}");
+        Debug.WriteLine($"[INFO] NavigatingTo Source ⇨ {e.SourcePageType}");
         base.OnNavigatedTo(e);
         OpacityStoryboard.Begin();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] NavigatingFrom Source ⇨ {e.SourcePageType}");
+        Debug.WriteLine($"[INFO] NavigatingFrom Source ⇨ {e.SourcePageType}");
         OpacityStoryboard.SkipToFill();
         base.OnNavigatingFrom(e);
     }

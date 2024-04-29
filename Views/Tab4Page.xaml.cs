@@ -37,6 +37,12 @@ public sealed partial class Tab4Page : Page
         ViewModel = App.GetService<TabViewModel>();
 
         url.Text = "For more WinUI3 examples be sure to visit my github at https://github.com/GuildOfCalamity?tab=repositories";
+
+        if (App.AnimationsEffectsEnabled)
+            StoryboardSpinner.Begin();
+
+        this.Tapped += (s, e) => { ShowMessage("Page Tapped", InfoBarSeverity.Success); };
+        this.Loaded += (s, e) => { ShowMessage("Page Loaded", InfoBarSeverity.Informational); };
     }
 
     /// <summary>
@@ -50,17 +56,30 @@ public sealed partial class Tab4Page : Page
             url.Text = $"Please wait ({DateTime.Now.ToString("hh:mm:ss.fff tt")})";
     }
 
+    public void ShowMessage(string message, InfoBarSeverity severity)
+    {
+        infoBar.DispatcherQueue?.TryEnqueue(() =>
+        {
+            infoBar.IsOpen = true;
+            infoBar.Severity = severity;
+            infoBar.Message = $"{message}";
+
+            // If using the ItemsRepeater in the InfoBar.
+            //_msgs.Add(new Message { Content = $"{message}", Severity = severity });
+        });
+    }
+
     #region [Overrides]
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingTo");
+        Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
         base.OnNavigatedTo(e);
         OpacityStoryboard.Begin();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingFrom");
+        Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
         OpacityStoryboard.SkipToFill();
         base.OnNavigatingFrom(e);
     }

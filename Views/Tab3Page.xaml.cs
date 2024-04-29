@@ -85,14 +85,14 @@ namespace TabApp.Views
         #region [Overrides]
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingTo");
+            Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
             base.OnNavigatedTo(e);
             OpacityStoryboard.Begin();
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"[INFO] OnNavigatingFrom");
+            Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
             OpacityStoryboard.SkipToFill();
             base.OnNavigatingFrom(e);
         }

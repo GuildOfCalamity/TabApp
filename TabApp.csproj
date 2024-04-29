@@ -64,6 +64,12 @@
     <None Remove="Assets\Fonts\OdinRounded.ttf" />
     <None Remove="Assets\Fonts\TaurusMonoOutline.ttf" />
     <None Remove="Assets\Important.png" />
+    <None Remove="Assets\LED_Error.png" />
+    <None Remove="Assets\LED_Idle.png" />
+    <None Remove="Assets\LED_Off.png" />
+    <None Remove="Assets\LED_On.png" />
+    <None Remove="Assets\LED_Warning.png" />
+    <None Remove="Assets\SpinnerRing.png" />
     <None Remove="Assets\TabIcon.ico" />
     <None Remove="Assets\TabIcon.png" />
     <None Remove="Assets\Warning.png" />

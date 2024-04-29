@@ -39,7 +39,10 @@ public sealed partial class MainWindow : Window
         this.VisibilityChanged += (sender, args) =>
         {
             if (!App.IsClosing)
-            	Debug.WriteLine($"[INFO] MainWindow visibility changed to '{args.Visible}'");
+            {
+                Debug.WriteLine($"[INFO] MainWindow visibility changed to '{args.Visible}'");
+                App.RootEventBus?.Publish("WindowVisibilityEvent", args.Visible);
+            }
         };
 
         App.MainDispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();

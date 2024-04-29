@@ -3244,6 +3244,9 @@ public static class GeneralExtensions
     /// </example>
     public static Task CallOnUIThread(this Microsoft.UI.Dispatching.DispatcherQueue dispatcher, Microsoft.UI.Dispatching.DispatcherQueueHandler handler)
     {
+        if (dispatcher == null)
+            return Task.CompletedTask;
+
         try
         {
             _ = dispatcher.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, handler);
@@ -3266,6 +3269,9 @@ public static class GeneralExtensions
     /// <remarks>If the current thread has access to <paramref name="dispatcher"/>, <paramref name="function"/> will be invoked directly.</remarks>
     public static Task EnqueueAsync(this Microsoft.UI.Dispatching.DispatcherQueue dispatcher, Action function, Microsoft.UI.Dispatching.DispatcherQueuePriority priority = Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal)
     {
+        if (dispatcher == null)
+            return Task.CompletedTask;
+
         // Run the function directly when we have thread access.
         // Also reuse Task.CompletedTask in case of success,
         // to skip an unnecessary heap allocation for every invocation.
@@ -3322,6 +3328,9 @@ public static class GeneralExtensions
     /// <remarks>If the current thread has access to <paramref name="dispatcher"/>, <paramref name="function"/> will be invoked directly.</remarks>
     public static Task<T> EnqueueAsync<T>(this Microsoft.UI.Dispatching.DispatcherQueue dispatcher, Func<T> function, Microsoft.UI.Dispatching.DispatcherQueuePriority priority = Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal)
     {
+        if (dispatcher == null)
+            return Task.FromException<T>(new ArgumentNullException(nameof(Microsoft.UI.Dispatching.DispatcherQueue)));
+
         // If we have thread access, we can retrieve the task directly.
         // We don't use ConfigureAwait(false) in this case, in order
         // to let the caller continue its execution on the same thread
@@ -3354,7 +3363,7 @@ public static class GeneralExtensions
                 }
             }))
             {
-                taskCompletionSource.SetException(GetEnqueueException("Failed to enqueue the operation"));
+                taskCompletionSource.SetException(GetEnqueueException("Failed to enqueue the operation."));
             }
 
             return taskCompletionSource.Task;
@@ -3374,6 +3383,9 @@ public static class GeneralExtensions
     /// <remarks>If the current thread has access to <paramref name="dispatcher"/>, <paramref name="function"/> will be invoked directly.</remarks>
     public static Task EnqueueAsync(this Microsoft.UI.Dispatching.DispatcherQueue dispatcher, Func<Task> function, Microsoft.UI.Dispatching.DispatcherQueuePriority priority = Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal)
     {
+        if (dispatcher == null)
+            return Task.CompletedTask;
+
         // If we have thread access, we can retrieve the task directly.
         // We don't use ConfigureAwait(false) in this case, in order
         // to let the caller continue its execution on the same thread
@@ -3441,6 +3453,9 @@ public static class GeneralExtensions
     /// <remarks>If the current thread has access to <paramref name="dispatcher"/>, <paramref name="function"/> will be invoked directly.</remarks>
     public static Task<T> EnqueueAsync<T>(this Microsoft.UI.Dispatching.DispatcherQueue dispatcher, Func<Task<T>> function, Microsoft.UI.Dispatching.DispatcherQueuePriority priority = Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal)
     {
+        if (dispatcher == null)
+            return Task.FromException<T>(new ArgumentNullException(nameof(Microsoft.UI.Dispatching.DispatcherQueue)));
+
         if (dispatcher.HasThreadAccess) //if (IsHasThreadAccessPropertyAvailable && dispatcher.HasThreadAccess)
         {
             try

@@ -58,7 +58,8 @@
         Shadow="{StaticResource SharedShadow}"
         Translation="0,0,64">
         <Grid.RowDefinitions>
-            <RowDefinition Height="4*" />
+            <RowDefinition Height="6*" />
+            <RowDefinition Height="1*" />
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
@@ -94,6 +95,39 @@
                         VerticalAlignment="Center"
                         Foreground="{ThemeResource SecondaryBrush}"
                         Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanVisibility}, ConverterParameter=False}" />
+                    <Image
+                        Width="40"
+                        Height="40"
+                        Margin="10,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Source="/Assets/SpinnerGear.png"
+                        Stretch="Uniform"
+                        Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanVisibility}, ConverterParameter=False}">
+                        <Image.Resources>
+                            <Storyboard x:Name="StoryboardSpinner" RepeatBehavior="Forever">
+                                <DoubleAnimation
+                                    x:Name="dblAnimation"
+                                    Storyboard.TargetName="spinnerTransform"
+                                    Storyboard.TargetProperty="Angle"
+                                    From="0"
+                                    To="360"
+                                    Duration="00:00:06.1">
+                                    <DoubleAnimation.EasingFunction>
+                                        <!--
+                                        <CircleEase EasingMode="EaseInOut" />
+                                        <BackEase Amplitude="0.5" EasingMode="EaseInOut" />
+                                        -->
+                                        <ElasticEase Oscillations="2" Springiness="0.5" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </Image.Resources>
+                        <Image.RenderTransform>
+                            <!--  This must be equal to half of the image width/height.  -->
+                            <RotateTransform x:Name="spinnerTransform" CenterX="20" CenterY="20" />
+                        </Image.RenderTransform>
+                    </Image>
                 </StackPanel>
 
                 <AutoSuggestBox
@@ -169,6 +203,7 @@
                     </TextBox>
                     <!--#endregion-->
                 </ctrl:GroupBox>
+
             </StackPanel>
             <!--#endregion-->
 
@@ -266,7 +301,66 @@
             </StackPanel>
         </Grid>
 
-    </Grid>
+        <!--  AutoCloseInfoBar Testing  -->
+        <ctrl:AutoCloseInfoBar
+            x:Name="infoBar"
+            Grid.Row="2"
+            Margin="6"
+            VerticalAlignment="Bottom"
+            AutoCloseInterval="5000"
+            IsOpen="False"
+            Severity="Informational" />
 
+        <!--
+            An InfoBar can also have content extend below the Message
+            area. Comment out the AutoCloseInfoBar above and Uncomment
+            the standard InfoBar XAML below to see this in action.
+        -->
+        <!--
+        <InfoBar
+            x:Name="infoBar"
+            Grid.Row="2"
+            Margin="6"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom"
+            IsOpen="False"
+            Severity="Informational">
+            <InfoBar.Content>
+                <Grid MaxHeight="32" Margin="0,0,0,10">
+                    <ScrollViewer>
+                        <ItemsRepeater x:Name="InfoBarItemsRepeater">
+                            <ItemsRepeater.Transitions>
+                                <RepositionThemeTransition />
+                            </ItemsRepeater.Transitions>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="local:Message">
+                                    <StackPanel
+                                        Margin="0,2"
+                                        Padding="10,4"
+                                        Background="{x:Bind Severity, Mode=OneWay, Converter={StaticResource LevelToBrush}}"
+                                        CornerRadius="5">
+                                        <Grid ColumnDefinitions="2*,1*" ColumnSpacing="6">
+                                            <TextBlock
+                                                Grid.Column="0"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                Text="{x:Bind Content, Mode=OneWay}" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Text="{x:Bind Severity, Mode=OneWay}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </ScrollViewer>
+                </Grid>
+            </InfoBar.Content>
+        </InfoBar>
+        -->
+
+    </Grid>
 
 </Page>
