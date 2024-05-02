@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Data.SqlTypes;
 using System.Diagnostics;
@@ -108,6 +109,29 @@ public static class GeneralExtensions
         MatchCollection matches = urlRx.Matches(text);
         foreach (Match match in matches) { urls.Add(match.Value); }
         return urls;
+    }
+
+    public static string DumpContent<T>(this List<T> list)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("[ ");
+        foreach (T item in list)
+        {
+            sb.Append(item);
+            sb.Append(", ");
+        }
+        sb.Append(']');
+        return sb.ToString();
+    }
+
+    public static int Remove<T>(this ObservableCollection<T> collection, Func<T, bool> predicate)
+    {
+        var itemsToRemove = collection.Where(predicate).ToList();
+        foreach (T item in itemsToRemove)
+        {
+            collection.Remove(item);
+        }
+        return itemsToRemove.Count;
     }
 
     /// <summary>
@@ -491,6 +515,10 @@ public static class GeneralExtensions
         return input.Any(item => !knownKeys.Add(item));
     }
     #endregion
+
+    public static string ToHexString(this long number) => Convert.ToHexString(BitConverter.GetBytes(number));
+    public static string ToHexString(this ulong number) => Convert.ToHexString(BitConverter.GetBytes(number));
+    public static string ToBinaryString(this int number) => Enumerable.Range(0, (int)Math.Log(number, 2) + 1).Aggregate(string.Empty, (collected, bitshifts) => ((number >> bitshifts) & 1) + collected);
 
     public static double Mod(this double number, double divider)
     {

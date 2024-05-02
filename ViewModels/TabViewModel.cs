@@ -18,6 +18,7 @@ using Microsoft.UI.Xaml.Media;
 using TabApp;
 using TabApp.Helpers;
 using TabApp.Models;
+using TabApp.Redemption;
 using Windows.Foundation.Collections;
 
 namespace TabApp.ViewModels;
@@ -171,6 +172,11 @@ public class TabViewModel : ObservableRecipient
         
         SystemState = SystemStates.Init;
 
+        var di = new DataItem { Title = "Some Title", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-2) };
+        Debug.WriteLine($"{di}");
+
+        TestTimerScheduler();
+
         if (!App.RootEventBus.IsSubscribed("WindowVisibilityEvent"))
             App.RootEventBus.Subscribe("WindowVisibilityEvent", EventBusMessageHandler);
 
@@ -250,11 +256,17 @@ public class TabViewModel : ObservableRecipient
         // Throw command for exceptions.
         ThrowExCommand = new RelayCommand(async () => await ThrowErrorAsync(), () => CanThrowError);
 
-        // Instantiating a PerformanceCounter can take a few seconds, so we'll queue this on another thread.
-        Task.Run(() =>
+        TaskTimer.Start(async () =>
         {
-            if (_perfCPU == null)
-                _perfCPU = new System.Diagnostics.PerformanceCounter("Processor Information", "% Processor Time", "_Total", true);
+            // Instantiating a PerformanceCounter can take a few seconds, so we'll queue this on another thread.
+            await Task.Run(() =>
+            {
+                if (_perfCPU == null)
+                    _perfCPU = new System.Diagnostics.PerformanceCounter("Processor Information", "% Processor Time", "_Total", true);
+            });
+        }).ContinueWith((t) =>
+        {
+            AddDataItem("[DEBUG]", $"PerformanceCounter took {t.Result.Duration.TotalSeconds:N1} seconds to initialize");
         });
 
         // CPU usage with RadialGauge.
@@ -286,7 +298,7 @@ public class TabViewModel : ObservableRecipient
             {
                 Thread.Sleep(2900);
 
-                if (!IsBusy)
+                if (!IsBusy && !App.IsClosing)
                 {
                     App.MainDispatcher?.CallOnUIThread(() =>
                     {
@@ -297,7 +309,7 @@ public class TabViewModel : ObservableRecipient
                 
                 Thread.Sleep(400);
 
-                if (!IsBusy)
+                if (!IsBusy && !App.IsClosing)
                 {
                     App.MainDispatcher?.CallOnUIThread(() =>
                     {
@@ -551,4 +563,41 @@ public class TabViewModel : ObservableRecipient
     #endregion
 
     #endregion
+
+    public void TestTimerScheduler()
+    {
+        int count = 0;
+
+        // 3.5 seconds total
+        var schedules = new[]
+        {
+             new TimerSchedule(TimeSpan.FromSeconds(1), 5, 999),
+             //new TimerSchedule(TimeSpan.FromSeconds(2), 1, 888),
+             //new TimerSchedule(TimeSpan.FromSeconds(3), 1, 777),
+        };
+
+        TimerScheduler timer = new TimerScheduler(schedules);
+        DateTime previousTime = DateTime.MinValue;
+
+        timer.Elapsed += (object? sender, TimerElapsedEventArgs e) =>
+        {
+            count++;
+
+            Debug.WriteLine($"[INFO] Elapsed event id {e.SignalId}: {count} at {DateTime.Now.ToString("h:mm:ss.fff tt")}");
+
+            if (count == 1)
+            {
+                previousTime = e.SignalTime;
+                return;
+            }
+
+            TimeSpan interval = e.SignalTime - previousTime;
+            Debug.WriteLine($"[INFO] Interval: {interval.TotalSeconds} seconds");
+            previousTime = e.SignalTime;
+        };
+
+        timer.Start();
+        //await Task.Delay(5000);
+        //timer.Dispose();
+    }
 }

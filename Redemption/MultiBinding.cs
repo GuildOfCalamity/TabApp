@@ -331,7 +331,7 @@ public class MultiBinding
             // instance doesn't use the proxy property more than once, 
             // all of the properties are fungible as we don't actually do anything
             // with the values; the converter does all the work. This is a big
-            // improvement from my original implementation for XF which 
+            // improvement from my original implementation for Xamarin Forms which 
             // created new properties for every MulitBinding, which
             // had to do all the work of resolving the binding sources.
             // Now the total number of properties needed by the entire application

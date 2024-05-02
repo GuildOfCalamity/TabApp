@@ -264,7 +264,8 @@ public sealed partial class Tab4Page : Page
           "Mark     ","Nathan     ","Gloria   ","Wilma      ",
           "Peter    ","Scott      ","Byron    ","Stephanie  ",
           "Fred     ","Frederick  ","Bill     ","Robert     ",
-          "Jade     ","Alex       "
+          "Frank    ","Jade       ","Alex     ","Bart       ",
+          "Carol    ","Sarah      ","Joan     ","Jose       "
     };
     #endregion
 }
