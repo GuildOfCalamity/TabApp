@@ -12,6 +12,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:TabApp.Models"
     xmlns:root="using:TabApp"
+    xmlns:wr="using:TabApp.Redemption"
     x:Name="ThisPage"
     Background="{ThemeResource BackgroundBrush}"
     mc:Ignorable="d">
@@ -88,7 +89,14 @@
                         Content="Sample Command"
                         IsEnabled="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
                         Style="{StaticResource EnhancedButtonStyle}" />
+                    <Button
+                        Command="{x:Bind ViewModel.ThrowExCommand}"
+                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Mode=OneWay}"
+                        Content="Exception Command"
+                        IsEnabled="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
+                        Style="{StaticResource EnhancedButtonStyle}" />
                     <ProgressRing
+                        x:Name="prSpinner"
                         Width="28"
                         Height="28"
                         HorizontalAlignment="Center"
@@ -96,8 +104,9 @@
                         Foreground="{ThemeResource SecondaryBrush}"
                         Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanVisibility}, ConverterParameter=False}" />
                     <Image
-                        Width="40"
-                        Height="40"
+                        x:Name="imgSpinner"
+                        Width="32"
+                        Height="32"
                         Margin="10,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
@@ -125,7 +134,7 @@
                         </Image.Resources>
                         <Image.RenderTransform>
                             <!--  This must be equal to half of the image width/height.  -->
-                            <RotateTransform x:Name="spinnerTransform" CenterX="20" CenterY="20" />
+                            <RotateTransform x:Name="spinnerTransform" CenterX="16" CenterY="16" />
                         </Image.RenderTransform>
                     </Image>
                 </StackPanel>
@@ -225,13 +234,19 @@
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
                 <!--  Version Area  -->
-                <Grid
-                    Margin="0"
-                    Background="{ThemeResource BackgroundBrush}"
-                    RowDefinitions="Auto">
-                    <!--
-                        This serves no purpose, but exists as an example of how to make you own spinner.
-                    -->
+                <Grid Margin="0">
+                    <Grid.Background>
+                        <LinearGradientBrush StartPoint="1,0" EndPoint="1,1">
+                            <GradientStopCollection>
+                                <GradientStop Offset="0" Color="#FF5FB2F2" />
+                                <GradientStop Offset="0.05" Color="#FF5196CC" />
+                                <GradientStop Offset="0.15" Color="#FF3D7199" />
+                                <GradientStop Offset="0.2" Color="#FF284B66" />
+                                <GradientStop Offset="0.3" Color="#FF142533" />
+                                <GradientStop Offset="1.0" Color="#FF0A1219" />
+                            </GradientStopCollection>
+                        </LinearGradientBrush>
+                    </Grid.Background>
                     <Image
                         Width="30"
                         Height="30"
@@ -311,45 +326,42 @@
             IsOpen="False"
             Severity="Informational" />
 
-        <!--
-            An InfoBar can also have content extend below the Message
-            area. Comment out the AutoCloseInfoBar above and Uncomment
-            the standard InfoBar XAML below to see this in action.
-        -->
-        <!--
+        <!-- NOTE: An InfoBar can also have content extend below the Message
+                   area. Comment out the AutoCloseInfoBar above and uncomment
+                   the standard InfoBar XAML below to see this in action.
         <InfoBar
             x:Name="infoBar"
             Grid.Row="2"
             Margin="6"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Bottom"
-            IsOpen="False"
+            IsOpen="True"
             Severity="Informational">
             <InfoBar.Content>
-                <Grid MaxHeight="32" Margin="0,0,0,10">
+                <Grid MaxHeight="50" Margin="0,0,0,1">
                     <ScrollViewer>
-                        <ItemsRepeater x:Name="InfoBarItemsRepeater">
+                        <ItemsRepeater x:Name="ibItemsRepeater" ItemsSource="{x:Bind ViewModel.NamedColors, Mode=OneWay}">
                             <ItemsRepeater.Transitions>
                                 <RepositionThemeTransition />
                             </ItemsRepeater.Transitions>
                             <ItemsRepeater.ItemTemplate>
-                                <DataTemplate x:DataType="local:Message">
+                                <DataTemplate x:DataType="model:NamedColor">
                                     <StackPanel
                                         Margin="0,2"
-                                        Padding="10,4"
-                                        Background="{x:Bind Severity, Mode=OneWay, Converter={StaticResource LevelToBrush}}"
+                                        Padding="6,2"
+                                        Background="{x:Bind Color, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
                                         CornerRadius="5">
                                         <Grid ColumnDefinitions="2*,1*" ColumnSpacing="6">
                                             <TextBlock
                                                 Grid.Column="0"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Center"
-                                                Text="{x:Bind Content, Mode=OneWay}" />
+                                                Text="{x:Bind Amount, Mode=OneWay}" />
                                             <TextBlock
                                                 Grid.Column="1"
                                                 HorizontalAlignment="Right"
                                                 VerticalAlignment="Center"
-                                                Text="{x:Bind Severity, Mode=OneWay}" />
+                                                Text="{x:Bind Time, Mode=OneWay}" />
                                         </Grid>
                                     </StackPanel>
                                 </DataTemplate>

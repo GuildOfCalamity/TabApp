@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml;
@@ -15,7 +16,9 @@ using Windows.UI.Popups;
 using Windows.UI.ViewManagement;
 
 using TabApp.ViewModels;
-using System.Threading;
+using Microsoft.UI.Windowing;
+using TabApp.Helpers;
+
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,10 +38,12 @@ namespace TabApp
         public static IntPtr WindowHandle { get; set; }
         public static FrameworkElement? MainRoot { get; set; }
         public static bool IsClosing { get; set; } = false;
+        public static string AssetFolder { get; set; } = "Assets";
         public static Microsoft.UI.Dispatching.DispatcherQueue? MainDispatcher { get; set; }
+        public static Microsoft.UI.Windowing.AppWindow? MainAppWindow { get; set; }
 
-        public static event Action<string> OnWindowClosing = (time) => { };
-        public static event Action<string> OnWindowDestroying = (time) => { };
+        public static event Action<Microsoft.UI.Windowing.AppWindow> OnWindowClosing = (appwin) => { };
+        public static event Action<Microsoft.UI.Windowing.AppWindow> OnWindowDestroying = (appwin) => { };
         public static event Action<Microsoft.UI.Windowing.OverlappedPresenter> OnWindowMinMax = (presenter) => { };
         public static event Action<Microsoft.UI.Windowing.OverlappedPresenter> OnWindowOrderChanged = (presenter) => { };
         public static event Action<Windows.Graphics.PointInt32> OnWindowMove = (point) => { };
@@ -58,7 +63,7 @@ namespace TabApp
 #if IS_UNPACKAGED // We're using a custom PropertyGroup Condition we defined in the csproj to help us with the decision.
         public static bool IsPackaged { get => false; }
 #else
-    public static bool IsPackaged { get => true; }
+        public static bool IsPackaged { get => true; }
 #endif
 
         // We won't configure backing fields for these as the user could adjust them during app lifetime.
@@ -84,6 +89,48 @@ namespace TabApp
                     return true;
             }
         }
+        public static ElementTheme ThemeRequested
+        {
+            get
+            {
+                if (App.IsPackaged)
+                    return (ElementTheme)Enum.Parse(typeof(ElementTheme), Application.Current.RequestedTheme.ToString());
+                else
+                    return App.MainRoot?.ActualTheme ?? ElementTheme.Default;
+            }
+        }
+        #endregion
+
+        #region [Config]
+        static bool _lastSave = false;
+        static DateTime _lastMove = DateTime.Now;
+        static Config? _localConfig;
+        public static Config? LocalConfig
+        {
+            get => _localConfig;
+            set => _localConfig = value;
+        }
+
+        public static Func<Config?, bool> SaveConfigFunc = (cfg) =>
+        {
+            if (cfg is not null)
+            {
+                Process proc = Process.GetCurrentProcess();
+                cfg.firstRun = false;
+                cfg.time = DateTime.Now;
+                cfg.state = SystemStates.Shutdown;
+                cfg.metrics = $"Process used {proc.PrivateMemorySize64 / 1024 / 1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
+                if (App.MainRoot is not null)
+                    cfg.theme = $"{App.MainRoot.ActualTheme}";
+                try
+                {
+                    _ = ConfigHelper.SaveConfig(cfg);
+                    return true;
+                }
+                catch (Exception) { return false; }
+            }
+            return false;
+        };
         #endregion
 
         /// <summary>
@@ -153,61 +200,155 @@ namespace TabApp
             var appWin = GetAppWindow(m_window);
             if (appWin != null)
             {
-                // We don't have the Closing event exposed by default, so we'll use the AppWindow object to compensate.
+                MainAppWindow = appWin;
+
+                // Gets or sets a value that indicates whether this window will appear in various system representations, such as ALT+TAB and taskbar.
+                appWin.IsShownInSwitchers = true;
+
+                // We don't have the Closing event exposed by default, so we'll use the AppWindow to compensate.
                 appWin.Closing += (s, e) => 
                 { 
                     App.IsClosing = true;
-                    OnWindowClosing?.Invoke(DateTime.Now.ToString("hh:mm:ss.fff tt"));
+                    Debug.WriteLine($"[INFO] Application closing detected at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+                    OnWindowClosing?.Invoke(s);
+                    _lastSave = SaveConfigFunc(LocalConfig);
                 };
 
+                // Destroying is always called, but Closing is only called when the application is shutdown normally.
                 appWin.Destroying += (s, e) =>
                 {
-                    OnWindowDestroying?.Invoke(DateTime.Now.ToString("hh:mm:ss.fff tt"));
+                    Debug.WriteLine($"[INFO] Application destroying detected at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+                    OnWindowDestroying?.Invoke(s);
+                    if (!_lastSave) // prevent redundant calls
+                        SaveConfigFunc(LocalConfig);
                 };
 
+                // The changed event holds a bunch of juicy info that we can extrapolate.
                 appWin.Changed += (s, args) =>
                 {
+                    #region [Signal any listening events]
                     /*
-                    {args.DidPositionChange}    // happens on a move
-                    {args.DidPresenterChange}   // happens on a maximize/minimize
-                    {args.DidZOrderChange}      // happens on a foreground change
-                    {args.DidSizeChange}        // happens on size change
-                    {args.DidVisibilityChange}  // happens on AppWindow visibility
+                        DidPositionChange..... happens on a move
+                        DidPresenterChange.... happens on a maximize/minimize
+                        DidZOrderChange....... happens on a foreground change
+                        DidSizeChange......... happens on size change
+                        DidVisibilityChange... happens on AppWindow visibility
                     */
-
-                    // Signal any listening events...
-                    if (args.DidPresenterChange) 
+                    if (args.DidSizeChange) { OnWindowSizeChanged?.Invoke(s.Size); }
+                    if (args.DidPositionChange) 
+                    { 
+                        OnWindowMove?.Invoke(s.Position);
+                        // Add debounce in scenarios where this event could be hammered.
+                        var idleTime = DateTime.Now - _lastMove;
+                        if (idleTime.TotalSeconds > 2.0d && LocalConfig != null)
+                        {
+                            Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y}");
+                            _lastMove = DateTime.Now;
+                            if (s.Position.X != 0 && s.Position.Y != 0)
+                            {
+                                LocalConfig.windowX = s.Position.X;
+                                LocalConfig.windowY = s.Position.Y;
+                                try
+                                {
+                                    // Recommended to be called on UI thread, but seems harmless so far.
+                                    var da = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(Microsoft.UI.Win32Interop.GetWindowIdFromWindow(App.WindowHandle), Microsoft.UI.Windowing.DisplayAreaFallback.Nearest);
+                                    LocalConfig.primaryDisplay = da.IsPrimary;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine($"[WARNING] DisplayArea.GetFromWindowId: {ex.Message}");
+                                    LocalConfig.primaryDisplay = true;
+                                }
+                            }
+                        }
+                    }
+                    // This property is initially null. Once a window has been shown it always has a
+                    // presenter applied, either one applied by the platform or applied by the app itself.
+                    if (args.DidPresenterChange && s.Presenter is not null) 
                     {
-                        if (s.Presenter is not null && s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
+                        if (s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
                         {
                             Debug.WriteLine($"[INFO] OnWindowMinMax: {op.State}");
                             OnWindowMinMax?.Invoke(op);
                         }
                     }
-                    if (args.DidZOrderChange) 
+                    if (args.DidZOrderChange && s.Presenter is not null) 
                     {
-                        if (s.Presenter is not null && s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
+                        if (s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op)
                         {
                             Debug.WriteLine($"[INFO] OnWindowOrderChanged: {op.State}");
                             OnWindowOrderChanged?.Invoke(op);
                         }
                     }
-                    if (args.DidPositionChange) { OnWindowMove?.Invoke(s.Position); }
-                    if (args.DidSizeChange) { OnWindowSizeChanged?.Invoke(s.Size); }
+                    #endregion
                 };
 
                 if (IsPackaged)
-                    appWin.SetIcon(System.IO.Path.Combine(Windows.ApplicationModel.Package.Current.InstalledLocation.Path, "Assets/TabIcon.ico"));
+                    appWin.SetIcon(System.IO.Path.Combine(Windows.ApplicationModel.Package.Current.InstalledLocation.Path, $"{AssetFolder}/TabIcon.ico"));
                 else
-                    appWin.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets/TabIcon.ico"));
+                    appWin.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, $"{AssetFolder}/TabIcon.ico"));
+
+                appWin.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
             }
 
+            // ShowOnceWithRequestedStartupState is the equivalent of calling ShowWindow(SW_SHOWDEFAULT).
+            // It uses the show mode specified in the STARTUPINFO struct, if specified. This applies to
+            // the default presenter (OverlappedPresenter). Check the OverlappedPresenter.RequestedStartupState
+            // property to determine the presenter state (Maximized, Minimized, or Restored) that will result
+            // from calling the ShowOnceWithRequestedStartupState method.
+            // https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.windowing.appwindow.showoncewithrequestedstartupstate?view=windows-app-sdk-1.5
+            //appWin?.ShowOnceWithRequestedStartupState();
+
             m_window.Activate();
-            appWin?.Resize(new Windows.Graphics.SizeInt32(1100, 700));
-            CenterWindow(m_window);
 
             // Save the FrameworkElement for any future content dialogs.
             MainRoot = m_window.Content as FrameworkElement;
+
+            #region [Load Config]
+            Task.Run(async () =>
+            {
+                if (ConfigHelper.DoesConfigExist())
+                {
+                    try
+                    {
+                        LocalConfig = await ConfigHelper.LoadConfig();
+                        if (LocalConfig != null)
+                        {
+                            Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY}");
+                            //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
+                            appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, 1100, 700), Microsoft.UI.Windowing.DisplayArea.Primary);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[ERROR] {nameof(ConfigHelper.LoadConfig)}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        LocalConfig = new Config
+                        {
+                            firstRun = true,
+                            theme = $"{App.ThemeRequested}",
+                            version = $"{App.GetCurrentAssemblyVersion()}",
+                            time = DateTime.Now,
+                            state = SystemStates.Init,
+                            metrics = "N/A",
+                        };
+                        await ConfigHelper.SaveConfig(LocalConfig);
+
+                        appWin?.Resize(new Windows.Graphics.SizeInt32(1100, 700));
+                        CenterWindow(m_window);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[ERROR] {nameof(ConfigHelper.SaveConfig)}: {ex.Message}");
+                    }
+                }
+            });
+            #endregion
         }
 
         /// <summary>
@@ -224,12 +365,38 @@ namespace TabApp
             else
                 Debug.WriteLine($"[NOTE] '{typeof(T).Name}' is not a generic type.");
 
-            if ((App.Current as App)!.Host.Services.GetService(typeof(T)) is not T service)
+            if ((App.Current as App)!.Host?.Services.GetService(typeof(T)) is not T service)
             {
                 throw new ArgumentException($"{typeof(T)} needs to be registered in ConfigureServices within App.xaml.cs.");
             }
 
             return service;
+        }
+
+        /// <summary>
+        /// Simplified debug logger for app-wide use.
+        /// </summary>
+        /// <param name="message">the text to append to the file</param>
+        public static void DebugLog(string message)
+        {
+            try
+            {
+                if (App.IsPackaged)
+                    System.IO.File.AppendAllText(System.IO.Path.Combine(Windows.ApplicationModel.Package.Current.InstalledLocation.Path, "Debug.log"), $"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}{Environment.NewLine}");
+                else
+                    System.IO.File.AppendAllText(System.IO.Path.Combine(System.AppContext.BaseDirectory, "Debug.log"), $"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}{Environment.NewLine}");
+            }
+            catch (Exception)
+            {
+                Debug.WriteLine($"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}");
+            }
+        }
+
+        public static TimeSpan GetStopWatch(bool reset = false)
+        {
+            var ts = vsw.GetElapsedTime();
+            if (reset) { vsw = ValueStopwatch.StartNew(); }
+            return ts;
         }
 
         #region [Window Helpers]
@@ -245,7 +412,7 @@ namespace TabApp
             // Retrieve the window handle (HWND) of the current (XAML) WinUI3 window.
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
 
-            // For other classes to use.
+            // For other classes to use (mostly P/Invoke).
             App.WindowHandle = hWnd;
 
             // Retrieve the WindowId that corresponds to hWnd.
@@ -253,14 +420,6 @@ namespace TabApp
 
             // Lastly, retrieve the AppWindow for the current (XAML) WinUI3 window.
             Microsoft.UI.Windowing.AppWindow appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-
-            if (appWindow != null)
-            {
-                // You now have an AppWindow object, and you can call its methods to manipulate the window.
-                // As an example, let's change the title text of the window: appWindow.Title = "Title text updated via AppWindow!";
-                //appWindow.Move(new Windows.Graphics.PointInt32(200, 100));
-                appWindow?.MoveAndResize(new Windows.Graphics.RectInt32(250, 100, 1300, 800), Microsoft.UI.Windowing.DisplayArea.Primary);
-            }
 
             return appWindow;
         }
@@ -394,60 +553,26 @@ namespace TabApp
         }
         #endregion
 
+        #region [Reflection Helpers]
         /// <summary>
         /// Returns the declaring type's namespace.
         /// </summary>
-        public static string? GetCurrentNamespace()
-        {
-            return System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Namespace;
-        }
+        public static string? GetCurrentNamespace() => System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Namespace;
 
         /// <summary>
         /// Returns the declaring type's assembly name.
+        /// Similar ⇨ System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Assembly.FullName
         /// </summary>
-        public static string? GetCurrentAssemblyName()
-        {
-            //return System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Assembly.FullName;
-            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-        }
+        public static string? GetCurrentAssemblyName() => System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 
         /// <summary>
         /// Returns the AssemblyVersion, not the FileVersion.
         /// </summary>
-        public static Version GetCurrentAssemblyVersion()
-        {
-            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version();
-        }
-
-        /// <summary>
-        /// Simplified debug logger for app-wide use.
-        /// </summary>
-        /// <param name="message">the text to append to the file</param>
-        public static void DebugLog(string message)
-        {
-            try
-            {
-                if (App.IsPackaged)
-                    System.IO.File.AppendAllText(System.IO.Path.Combine(Windows.ApplicationModel.Package.Current.InstalledLocation.Path, "Debug.log"), $"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}{Environment.NewLine}");
-                else
-                    System.IO.File.AppendAllText(System.IO.Path.Combine(System.AppContext.BaseDirectory, "Debug.log"), $"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}{Environment.NewLine}");
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine($"[{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff tt")}] {message}");
-            }
-        }
-
-        public static TimeSpan GetStopWatch(bool reset = false)
-        {
-            var ts = vsw.GetElapsedTime();
-            if (reset) { vsw = ValueStopwatch.StartNew(); }
-            return ts;
-        }
+        public static Version GetCurrentAssemblyVersion() => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version();
+        #endregion
 
         #region [Dialog Helpers]
         static SemaphoreSlim semaSlim = new SemaphoreSlim(1, 1);
-
         /// <summary>
         /// The <see cref="Windows.UI.Popups.MessageDialog"/> does not look as nice as the
         /// <see cref="Microsoft.UI.Xaml.Controls.ContentDialog"/> and is not part of the native Microsoft.UI.Xaml.Controls.
@@ -539,12 +664,13 @@ namespace TabApp
         /// <remarks>
         /// There is no need to call <see cref="WinRT.Interop.InitializeWithWindow.Initialize"/> when using the <see cref="Microsoft.UI.Xaml.Controls.ContentDialog"/>,
         /// but a <see cref="Microsoft.UI.Xaml.XamlRoot"/> must be defined since it inherits from <see cref="Microsoft.UI.Xaml.Controls.Control"/>.
+        /// The <see cref="SemaphoreSlim"/> was added to prevent "COMException: Only one ContentDialog can be opened at a time."
         /// </remarks>
         public static async Task ShowDialogBox(string title, string message, string primaryText, string cancelText, Action? onPrimary, Action? onCancel, Uri? imageUri)
         {
             if (App.MainRoot?.XamlRoot == null) { return; }
 
-            await semaSlim.WaitAsync(); // COMException: Only one ContentDialog may be opened at a time.
+            await semaSlim.WaitAsync(); 
 
             #region [Initialize Assets]
             double fontSize = 16;

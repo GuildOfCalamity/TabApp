@@ -8,6 +8,7 @@
     xmlns:local="using:TabApp.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:TabApp.Models"
+    xmlns:wr="using:TabApp.Redemption"
     x:Name="ThisPage"
     Background="{ThemeResource BackgroundBrush}"
     mc:Ignorable="d">
@@ -128,8 +129,9 @@
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="12*" />
+                    <ColumnDefinition Width="10*" />
                     <ColumnDefinition Width="4*" />
+                    <ColumnDefinition Width="2*" />
                 </Grid.ColumnDefinitions>
                 <Grid.Resources>
                     <Style BasedOn="{StaticResource ColumnHeaderBorderStyle}" TargetType="Border" />
@@ -144,17 +146,21 @@
                 <Border Grid.Column="2">
                     <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Last Updated" />
                 </Border>
+                <Border Grid.Column="3">
+                    <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Multibind" />
+                </Border>
             </Grid>
             <ScrollViewer Grid.Row="1" IsHitTestVisible="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}">
                 <ItemsControl ItemsSource="{x:Bind ViewModel.DataItems, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="model:DataItem">
-                            <StackPanel Margin="0,2" Opacity="{Binding ElementName=ThisPage, Path=ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanOpacityInverse}}">
-                                <Grid x:Name="gridItem">
+                            <StackPanel Margin="0,0,2,2" Opacity="{Binding ElementName=ThisPage, Path=ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanOpacityInverse}}">
+                                <Grid x:Name="gridItem" Margin="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="12*" />
+                                        <ColumnDefinition Width="10*" />
                                         <ColumnDefinition Width="4*" />
+                                        <ColumnDefinition Width="2*" />
                                     </Grid.ColumnDefinitions>
                                     <Grid.Resources>
                                         <Style TargetType="TextBlock">
@@ -164,10 +170,39 @@
                                             <Setter Property="Foreground" Value="{ThemeResource PrimaryBrush}" />
                                             <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}" />
                                         </Style>
+                                        <wr:MultiBindingCollection x:Key="Brush_MultiBindings">
+                                            <wr:MultiBinding
+                                                Converter="{StaticResource MultipleProperty}"
+                                                ConverterParameter="ThisIsUnnecessaryForOurScenario"
+                                                PropertyName="BorderBrush">
+                                                <wr:MultiBindingSource Binding="{Binding Created, Mode=OneWay}" />
+                                                <wr:MultiBindingSource Binding="{Binding Updated, Mode=OneWay}" />
+                                            </wr:MultiBinding>
+                                        </wr:MultiBindingCollection>
                                     </Grid.Resources>
                                     <TextBlock Grid.Column="0" Text="{x:Bind Title, Mode=OneWay}" />
                                     <TextBlock Grid.Column="1" Text="{x:Bind Data, Mode=OneWay}" />
                                     <TextBlock Grid.Column="2" Text="{x:Bind Updated, Mode=OneWay, Converter={StaticResource StringToFormat}, ConverterParameter='{}{0:ddd, dd MMM yyyy – hh:mm tt}'}" />
+                                    <!--#region [MultiBinding]-->
+                                    <!--
+                                        https://github.com/microsoft/microsoft-ui-xaml/issues/8334
+                                        https://learn.microsoft.com/en-us/dotnet/maui/fundamentals/data-binding/multibinding?view=net-maui-8.0
+                                        [MultiBinding Support]
+                                        https://github.com/peter0302/WinUI.Redemption/
+                                    -->
+                                    <Border
+                                        Grid.Column="3"
+                                        Margin="6,0"
+                                        wr:MultiBinding.MultiBindings="{StaticResource Brush_MultiBindings}"
+                                        BorderThickness="3"
+                                        CornerRadius="4">
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="{StaticResource FontSizeSmall}"
+                                            Text="Color Result" />
+                                    </Border>
+                                    <!--#endregion-->
                                 </Grid>
                             </StackPanel>
                         </DataTemplate>

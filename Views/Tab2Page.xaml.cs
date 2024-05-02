@@ -45,13 +45,15 @@ namespace TabApp.Views
         {
             Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
             base.OnNavigatedTo(e);
-            OpacityStoryboard.Begin();
+            if (App.AnimationsEffectsEnabled)
+                OpacityStoryboard.Begin();
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
-            OpacityStoryboard.SkipToFill();
+            if (App.AnimationsEffectsEnabled)
+                OpacityStoryboard.SkipToFill();
             base.OnNavigatingFrom(e);
         }
         #endregion

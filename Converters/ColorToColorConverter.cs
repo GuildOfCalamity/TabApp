@@ -23,6 +23,7 @@ public class ColorToLighterColorConverter : IValueConverter
         else
             return source.LighterBy(0.5F);
 
+        #region [old technique]
         var red = (int)((float)source.R * 1.6F);
         var green = (int)((float)source.G * 1.6F);
         var blue = (int)((float)source.B * 1.6F);
@@ -33,6 +34,7 @@ public class ColorToLighterColorConverter : IValueConverter
         if (blue == 0) { blue = 0x1F; }
         else if (blue > 255) { blue = 0xFF; }
         return Windows.UI.Color.FromArgb((byte)255, (byte)red, (byte)green, (byte)blue);
+        #endregion
     }
 
     public object? ConvertBack(object value, Type targetType, object parameter, string language)
@@ -58,6 +60,7 @@ public class ColorToDarkerColorConverter : IValueConverter
         else
             return source.DarkerBy(0.5F);
 
+        #region [old technique]
         if (source.R == 0) { source.R = 2; }
         if (source.G == 0) { source.G = 2; }
         if (source.B == 0) { source.B = 2; }
@@ -65,6 +68,7 @@ public class ColorToDarkerColorConverter : IValueConverter
         var green = (int)((float)source.G / 1.6F);
         var blue = (int)((float)source.B / 1.6F);
         return Windows.UI.Color.FromArgb((byte)255, (byte)red, (byte)green, (byte)blue);
+        #endregion
     }
 
     public object? ConvertBack(object value, Type targetType, object parameter, string language)
@@ -89,6 +93,7 @@ public class ColorToLighterBrushConverter : IValueConverter
         else
             return new SolidColorBrush(source.LighterBy(0.5F));
 
+        #region [old technique]
         var red = (int)((float)source.R * 1.6F);
         var green = (int)((float)source.G * 1.6F);
         var blue = (int)((float)source.B * 1.6F);
@@ -100,6 +105,7 @@ public class ColorToLighterBrushConverter : IValueConverter
         else if (blue > 255) { blue = 0xFF; }
         var scb = new SolidColorBrush(Windows.UI.Color.FromArgb((byte)255, (byte)red, (byte)green, (byte)blue));
         return scb;
+        #endregion
     }
 
     public object? ConvertBack(object value, Type targetType, object parameter, string language)
@@ -124,6 +130,7 @@ public class ColorToDarkerBrushConverter : IValueConverter
         else
             return new SolidColorBrush(source.DarkerBy(0.5F));
 
+        #region [old technique]
         if (source.R == 0) { source.R = 2; }
         if (source.G == 0) { source.G = 2; }
         if (source.B == 0) { source.B = 2; }
@@ -132,6 +139,7 @@ public class ColorToDarkerBrushConverter : IValueConverter
         var blue = (int)((float)source.B / 1.6F);
         var scb = new SolidColorBrush(Windows.UI.Color.FromArgb((byte)255, (byte)red, (byte)green, (byte)blue));
         return scb;
+        #endregion
     }
 
     public object? ConvertBack(object value, Type targetType, object parameter, string language)

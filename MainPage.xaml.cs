@@ -165,7 +165,7 @@ public sealed partial class MainPage : Page
     void mfiExitClick(object sender, RoutedEventArgs e)
     {
         App.IsClosing = true;
-        App.Current.Exit();
+        App.Current.Exit(); // will skip OnWindowClosing and go to OnWindowDestroying
     }
 
 }

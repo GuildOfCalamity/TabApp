@@ -17,13 +17,12 @@ public class ColorToBrushConverter : IValueConverter
     {
         try
         {
-            //Debug.WriteLine($"[INFO] Converting color value \"{value}\" to SolidColorBrush.");
             var scb = new SolidColorBrush((Windows.UI.Color)value);
             return scb;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[ERROR] ColorToBrushConverter: {ex.Message}");
+            Debug.WriteLine($"[ERROR] ColorToBrushConverter({value}): {ex.Message}");
             return new SolidColorBrush(Microsoft.UI.Colors.Red);
         }
     }

@@ -205,13 +205,15 @@ public sealed partial class Tab1Page : Page
     {
         Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
         base.OnNavigatedTo(e);
-        OpacityStoryboard.Begin();
+        if (App.AnimationsEffectsEnabled)
+            OpacityStoryboard.Begin();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         Debug.WriteLine($"[INFO] NavigatingFrom Source => {e.SourcePageType}");
-        OpacityStoryboard.SkipToFill();
+        if (App.AnimationsEffectsEnabled)
+            OpacityStoryboard.SkipToFill();
         base.OnNavigatingFrom(e);
     }
     #endregion
@@ -243,7 +245,7 @@ public sealed partial class Tab1Page : Page
                     }
                     else
                     {
-                        _ = App.ShowDialogBox($"{di.Title}", $"{di.Data}{Environment.NewLine}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null, new Uri("ms-appx:///Assets/Details.png"));
+                        _ = App.ShowDialogBox($"{di.Title}", $"{di.Data}{Environment.NewLine}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null, new Uri($"ms-appx:///{App.AssetFolder}/Details.png"));
                         //_ = App.ShowMessageBox($"{di.Title}", $"{di.Data}{Environment.NewLine}Created: {di.Created}{Environment.NewLine}Updated: {di.Updated}", "OK", "", null, null);
                     }
                 }

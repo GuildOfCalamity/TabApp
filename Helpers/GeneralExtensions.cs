@@ -787,7 +787,7 @@ public static class GeneralExtensions
 
         try
         {
-            Uri? uri = new Uri("ms-appx:///Assets/" + assetName.Replace("./", ""));
+            Uri? uri = new Uri($"ms-appx:///{App.AssetFolder}/" + assetName.Replace("./", ""));
             img = new BitmapImage(uri);
             Debug.WriteLine($"[INFO] Image resolved for '{assetName}'");
         }
@@ -1882,6 +1882,88 @@ public static class GeneralExtensions
     }
 
     /// <summary>
+    /// Similar to <see cref="GetReadableTime(DateTime, bool)"/>.
+    /// </summary>
+    /// <param name="timeSpan"><see cref="TimeSpan"/></param>
+    /// <returns>formatted text</returns>
+    public static string GetReadableTime(this TimeSpan timeSpan)
+    {
+        var ts = new TimeSpan(DateTime.Now.Ticks - timeSpan.Ticks);
+        var totMinutes = ts.TotalSeconds / 60;
+        var totHours = ts.TotalSeconds / 3_600;
+        var totDays = ts.TotalSeconds / 86_400;
+        var totWeeks = ts.TotalSeconds / 604_800;
+        var totMonths = ts.TotalSeconds / 2_592_000;
+        var totYears = ts.TotalSeconds / 31_536_000;
+
+        var parts = new StringBuilder();
+        if (totYears > 0.1)
+            parts.Append($"{totYears:N1} years ");
+        if (totMonths > 0.1)
+            parts.Append($"{totMonths:N1} months ");
+        if (totWeeks > 0.1)
+            parts.Append($"{totWeeks:N1} weeks ");
+        if (totDays > 0.1)
+            parts.Append($"{totDays:N1} days ");
+        if (totHours > 0.1)
+            parts.Append($"{totHours:N1} hours ");
+        if (totMinutes > 0.1)
+            parts.Append($"{totMinutes:N1} minutes ");
+
+        return parts.ToString().Trim();
+    }
+
+    /// <summary>
+    /// Similar to <see cref="GetReadableTime(TimeSpan)"/>.
+    /// </summary>
+    /// <param name="timeSpan"><see cref="TimeSpan"/></param>
+    /// <returns>formatted text</returns>
+    public static string GetReadableTime(this DateTime dateTime, bool addMilliseconds = false)
+    {
+        var timeSpan = new TimeSpan(DateTime.Now.Ticks - dateTime.Ticks);
+        //double totalSecs = timeSpan.TotalSeconds;
+
+        var parts = new StringBuilder();
+        if (timeSpan.Days > 0)
+            parts.AppendFormat("{0} {1} ", timeSpan.Days, timeSpan.Days == 1 ? "day" : "days");
+        if (timeSpan.Hours > 0)
+            parts.AppendFormat("{0} {1} ", timeSpan.Hours, timeSpan.Hours == 1 ? "hour" : "hours");
+        if (timeSpan.Minutes > 0)
+            parts.AppendFormat("{0} {1} ", timeSpan.Minutes, timeSpan.Minutes == 1 ? "minute" : "minutes");
+        if (timeSpan.Seconds > 0)
+            parts.AppendFormat("{0} {1} ", timeSpan.Seconds, timeSpan.Seconds == 1 ? "second" : "seconds");
+        if (addMilliseconds && timeSpan.Milliseconds > 0)
+            parts.AppendFormat("{0} {1}", timeSpan.Milliseconds, timeSpan.Milliseconds == 1 ? "millisecond" : "milliseconds");
+
+        return parts.ToString().TrimEnd();
+    }
+
+    /// <summary>
+    /// Similar to <see cref="GetReadableTime(TimeSpan)"/>.
+    /// </summary>
+    /// <param name="timeSpan"><see cref="TimeSpan"/></param>
+    /// <returns>formatted text</returns>
+    public static string ToReadableString(this TimeSpan span)
+    {
+        var parts = new StringBuilder();
+        if (span.Days > 0)
+            parts.Append($"{span.Days} day{(span.Days == 1 ? string.Empty : "s")} ");
+        if (span.Hours > 0)
+            parts.Append($"{span.Hours} hour{(span.Hours == 1 ? string.Empty : "s")} ");
+        if (span.Minutes > 0)
+            parts.Append($"{span.Minutes} minute{(span.Minutes == 1 ? string.Empty : "s")} ");
+        if (span.Seconds > 0)
+            parts.Append($"{span.Seconds} second{(span.Seconds == 1 ? string.Empty : "s")} ");
+        if (span.Milliseconds > 0)
+            parts.Append($"{span.Milliseconds} millisecond{(span.Milliseconds == 1 ? string.Empty : "s")} ");
+
+        if (parts.Length == 0) // result was less than 1 millisecond
+            return $"{span.TotalMilliseconds:N4} milliseconds"; // similar to span.Ticks
+        else
+            return parts.ToString().Trim();
+    }
+
+    /// <summary>
     /// Gets the default member name that is used for an indexer (e.g. "Item").
     /// </summary>
     /// <param name="type">Type to check.</param>
@@ -2696,6 +2778,26 @@ public static class GeneralExtensions
             {
                 Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
                 Thread.Sleep(2000);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Will retry each operation with a 2 second delay between attempts.
+    /// </summary>
+    public async static Task<T> RetryAsync<T>(this Func<T> operation, int attempts)
+    {
+        while (true)
+        {
+            try
+            {
+                attempts--;
+                return operation();
+            }
+            catch (Exception ex) when (attempts > 0)
+            {
+                Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
+                await Task.Delay(2000);
             }
         }
     }

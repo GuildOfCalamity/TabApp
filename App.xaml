@@ -18,6 +18,8 @@
 
                 <ResourceDictionary>
 
+                    <x:String x:Key="AssetFolder">Assets/</x:String>
+
                     <!--
                         === CONVERTERS ===
                     -->
@@ -39,6 +41,8 @@
                     <local:NumberToStringConverter x:Key="NumberToString" />
                     <local:DoubleTopThicknessConverter x:Key="DoubleTopThickness" />
                     <local:StateToImageConverter x:Key="StateToImage" />
+                    <local:StateToGradientBrushConverter x:Key="StateToGradientBrush" />
+                    <local:MultiplePropertyConverter x:Key="MultipleProperty" />
 
                     <!--
                         === MERGED DICTIONARIES ===
@@ -93,6 +97,7 @@
                                 TintColor="SpringGreen"
                                 TintLuminosityOpacity="0.1"
                                 TintOpacity="0.1" />
+
                             <LinearGradientBrush x:Key="GradientBrushDiag" StartPoint="0,0" EndPoint="1,1">
                                 <GradientStop Offset="0.0" Color="{StaticResource LinearBorder1}" />
                                 <GradientStop Offset="0.25" Color="{StaticResource LinearBorder2}" />
