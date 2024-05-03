@@ -8,7 +8,7 @@ public class TimerScheduler : IDisposable
     System.Timers.Timer _timer;
     IEnumerator<TimerSchedule> _schedules;
     int _currentTryCount;
-    int _currentId = 0;
+    string? _currentId = string.Empty;
 
     public delegate void TimerElapsedEventHandler(object? sender, TimerElapsedEventArgs e);
     public event TimerElapsedEventHandler? Elapsed;
@@ -89,7 +89,7 @@ public class TimerElapsedEventArgs : EventArgs
     /// <summary>
     /// The signal identifier.
     /// </summary>
-    public int SignalId { get; }
+    public string? SignalId { get; }
 
     /// <summary>
     /// Gets the <see cref="DateTime"/> when the <see cref="TimerScheduler.Elapsed"/> event was triggered.
@@ -102,11 +102,11 @@ public class TimerElapsedEventArgs : EventArgs
     /// </summary>
     public DateTime? NextSignalTime { get; }
 
-    public TimerElapsedEventArgs(DateTime signalTime, DateTime? nextSignalTime, int id)
+    public TimerElapsedEventArgs(DateTime signalTime, DateTime? nextSignalTime, string? id)
     {
         SignalTime = signalTime;
         NextSignalTime = nextSignalTime;
-        SignalId = id;
+        SignalId = id ?? "NULL";
     }
 }
 
@@ -115,7 +115,7 @@ public class TimerSchedule
     /// <summary>
     /// The identifier of the schedule.
     /// </summary>
-    public int Id { get; private set; }
+    public string? Id { get; private set; }
 
     /// <summary>
     /// The number of times to trigger Elapsed event. The timer will stop after the specified number of triggered Elapsed event.
@@ -142,14 +142,14 @@ public class TimerSchedule
     /// If we call <see cref="TimerScheduler.Start"/> at T+0s, the Elapsed event will be trigger at T+1s and T+2s, then the timer will stop.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public TimerSchedule(TimeSpan interval, int tryCount, int id = 1)
+    public TimerSchedule(TimeSpan interval, int tryCount, string? id)
     {
         if (tryCount < 0)
             throw new ArgumentOutOfRangeException(nameof(tryCount), "must be greater or equal to zero");
 
         Interval = interval;
         TryCount = tryCount;
-        Id = id;
+        Id = id ?? "NULL";
     }
 }
 #endregion

@@ -140,7 +140,7 @@ public sealed partial class MainPage : Page
         }
         else if (args.SelectedItem is NavigationViewItem item && item.Content is string content && Type.GetType($"{current}.Views.{content}Page") is Type pageType)
         {
-            _ = this.ContentFrame.Navigate(pageType);
+            _ = this.ContentFrame.Navigate(pageType, ViewModel != null ? ViewModel.SystemState : SystemStates.None);
         }
     }
 
@@ -149,7 +149,7 @@ public sealed partial class MainPage : Page
         var current = App.GetCurrentNamespace();
         if (sender is MenuFlyoutItem mfi && Type.GetType($"{current}.Views.{mfi.Text}Page") is Type pageType)
         {
-            _ = this.ContentFrame.Navigate(pageType);
+            _ = this.ContentFrame.Navigate(pageType, ViewModel != null ? ViewModel.SystemState : SystemStates.None);
         }
     }
 

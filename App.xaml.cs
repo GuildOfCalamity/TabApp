@@ -240,24 +240,31 @@ namespace TabApp
                         OnWindowMove?.Invoke(s.Position);
                         // Add debounce in scenarios where this event could be hammered.
                         var idleTime = DateTime.Now - _lastMove;
-                        if (idleTime.TotalSeconds > 2.0d && LocalConfig != null)
+                        if (idleTime.TotalSeconds > 1.01d && LocalConfig != null)
                         {
                             Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y}");
                             _lastMove = DateTime.Now;
-                            if (s.Position.X != 0 && s.Position.Y != 0)
+                            if (s.Position.X > 0 && s.Position.Y > 0)
                             {
-                                LocalConfig.windowX = s.Position.X;
-                                LocalConfig.windowY = s.Position.Y;
-                                try
+                                if (s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op && op.State != OverlappedPresenterState.Maximized)
                                 {
-                                    // Recommended to be called on UI thread, but seems harmless so far.
-                                    var da = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(Microsoft.UI.Win32Interop.GetWindowIdFromWindow(App.WindowHandle), Microsoft.UI.Windowing.DisplayAreaFallback.Nearest);
-                                    LocalConfig.primaryDisplay = da.IsPrimary;
+                                    LocalConfig.windowX = s.Position.X;
+                                    LocalConfig.windowY = s.Position.Y;
+                                    try
+                                    {
+                                        // Recommended to be called on UI thread, but seems harmless so far.
+                                        var da = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(Microsoft.UI.Win32Interop.GetWindowIdFromWindow(App.WindowHandle), Microsoft.UI.Windowing.DisplayAreaFallback.Nearest);
+                                        LocalConfig.primaryDisplay = da.IsPrimary;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Debug.WriteLine($"[WARNING] DisplayArea.GetFromWindowId: {ex.Message}");
+                                        LocalConfig.primaryDisplay = true;
+                                    }
                                 }
-                                catch (Exception ex)
+                                else
                                 {
-                                    Debug.WriteLine($"[WARNING] DisplayArea.GetFromWindowId: {ex.Message}");
-                                    LocalConfig.primaryDisplay = true;
+                                    Debug.WriteLine($"[INFO] Ignoring position saving because window maximized.");
                                 }
                             }
                         }
