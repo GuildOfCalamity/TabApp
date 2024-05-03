@@ -204,9 +204,14 @@ public sealed partial class Tab1Page : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         Debug.WriteLine($"[INFO] NavigatingTo Source => {e.SourcePageType}");
-        base.OnNavigatedTo(e);
+
+        if (e.Parameter != null && e.Parameter is SystemStates sys)
+            Debug.WriteLine($"[INFO] Received system state '{sys}'");
+
         if (App.AnimationsEffectsEnabled)
             OpacityStoryboard.Begin();
+
+        base.OnNavigatedTo(e);
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)

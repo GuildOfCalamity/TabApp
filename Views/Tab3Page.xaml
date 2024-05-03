@@ -34,44 +34,11 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid.Resources>
-            <Style x:Key="ColumnHeaderBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="Padding" Value="0,0,10,0" />
-                <Setter Property="CornerRadius" Value="2" />
-                <Setter Property="BorderThickness" Value="0,0,0,2" />
-                <Setter Property="BorderBrush" Value="{StaticResource HeaderBrush}" />
-                <Setter Property="Margin" Value="5,1,11,1" />
-            </Style>
-            <Style x:Key="ColumnHeaderTextBlockStyle" TargetType="TextBlock">
-                <Setter Property="Margin" Value="5,0" />
-                <Setter Property="FontWeight" Value="Normal" />
-                <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}" />
-                <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}" />
-            </Style>
-        </Grid.Resources>
-        <!--#region [Header]-->
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="12*" />
-                <ColumnDefinition Width="4*" />
-            </Grid.ColumnDefinitions>
-            <Grid.Resources>
-                <Style BasedOn="{StaticResource ColumnHeaderBorderStyle}" TargetType="Border" />
-                <Style BasedOn="{StaticResource ColumnHeaderTextBlockStyle}" TargetType="TextBlock" />
-            </Grid.Resources>
-            <Border Grid.Column="0">
-                <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Title" />
-            </Border>
-            <Border Grid.Column="1">
-                <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Data" />
-            </Border>
-            <Border Grid.Column="2">
-                <TextBlock Foreground="{ThemeResource HeaderBrush}" Text="Last Updated" />
-            </Border>
-        </Grid>
-        <!--#endregion-->
+        <TextBlock
+            Grid.Row="0"
+            Margin="19,1,1,10"
+            FontSize="{StaticResource FontSizeMedium}"
+            Text="Demonstration of updating Canvas objects inside a ListView." />
         <!--#region [Content]-->
         <ListView
             x:Name="DataListView"
@@ -99,35 +66,27 @@
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="model:DataItem">
                     <Grid
-                        x:Name="gridItem"
-                        Margin="2"
-                        Shadow="{StaticResource SharedShadow}"
-                        Translation="0,0,32">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="12*" />
-                            <ColumnDefinition Width="4*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.Resources>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontWeight" Value="Normal" />
-                                <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}" />
-                                <Setter Property="Foreground" Value="{ThemeResource PrimaryBrush}" />
-                                <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}" />
-                            </Style>
-                        </Grid.Resources>
-                        <TextBlock
-                            Grid.Column="0"
-                            Margin="1,0,1,0"
-                            Text="{x:Bind Title, Mode=OneWay}" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Margin="1,0,1,0"
-                            Text="{x:Bind Data, Mode=OneWay}" />
-                        <TextBlock
-                            Grid.Column="2"
-                            Margin="20,0,1,0"
-                            Text="{x:Bind Updated, Mode=OneWay, Converter={StaticResource StringToFormat}, ConverterParameter='{}{0:ddd, dd MMM yyyy – hh:mm tt}'}" />
+                        Margin="2,4"
+                        BorderBrush="{ThemeResource BorderBrush}"
+                        BorderThickness="2"
+                        CornerRadius="4">
+                        <Canvas
+                            x:Name="canvas"
+                            MinHeight="110"
+                            Loaded="canvas_Loaded">
+                            <Canvas.Background>
+                                <LinearGradientBrush StartPoint="1,0" EndPoint="1,1">
+                                    <GradientStopCollection>
+                                        <GradientStop Offset="0" Color="#FF5FB2F2" />
+                                        <GradientStop Offset="0.05" Color="#FF5196CC" />
+                                        <GradientStop Offset="0.09" Color="#FF3D7199" />
+                                        <GradientStop Offset="0.15" Color="#FF284B66" />
+                                        <GradientStop Offset="0.3" Color="#FF142533" />
+                                        <GradientStop Offset="1.0" Color="#FF0A1219" />
+                                    </GradientStopCollection>
+                                </LinearGradientBrush>
+                            </Canvas.Background>
+                        </Canvas>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

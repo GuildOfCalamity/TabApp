@@ -178,16 +178,23 @@ public sealed partial class Tab6Page : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         Debug.WriteLine($"[INFO] NavigatingTo Source ⇨ {e.SourcePageType}");
-        base.OnNavigatedTo(e);
+
+        if (e.Parameter != null && e.Parameter is SystemStates sys)
+            Debug.WriteLine($"[INFO] Received system state '{sys}'");
+
         if (App.AnimationsEffectsEnabled)
             OpacityStoryboard.Begin();
+
+        base.OnNavigatedTo(e);
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         Debug.WriteLine($"[INFO] NavigatingFrom Source ⇨ {e.SourcePageType}");
+
         if (App.AnimationsEffectsEnabled)
             OpacityStoryboard.SkipToFill();
+
         base.OnNavigatingFrom(e);
     }
     #endregion
