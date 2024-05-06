@@ -4,22 +4,19 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using System.Xml.Linq;
+
 using CommunityToolkit.Mvvm.ComponentModel;
+
 using Microsoft.UI;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using TabApp;
 using TabApp.Helpers;
 using TabApp.Models;
-using TabApp.Redemption;
-using Windows.Foundation.Collections;
+
 
 namespace TabApp.ViewModels;
 
@@ -134,8 +131,7 @@ public class TabViewModel : ObservableRecipient
         get => _selectedColor;
         set 
         {
-            // Fire event after user selects list item.
-            App.RootEventBus?.Publish("CPUEvent", value);
+            App.RootEventBus?.Publish("CPUEvent", value); // Fire event after user selects list item.
             SetProperty(ref _selectedColor, value); 
         }
     }
@@ -149,6 +145,14 @@ public class TabViewModel : ObservableRecipient
             ThrowExCommand?.NotifyCanExecuteChanged();
         }
     }
+
+    private DataItem? _scrollToItem;
+    public DataItem? ScrollToItem
+    {
+        get => _scrollToItem;
+        set => SetProperty(ref _scrollToItem, value);
+    }
+
 
     public ICommand SampleCommand { get; }
     public RelayCommand? ThrowExCommand { get; }
@@ -169,13 +173,8 @@ public class TabViewModel : ObservableRecipient
         _ = App.GetStopWatch(true);
 
         Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
-        
+
         SystemState = SystemStates.Init;
-
-        var di = new DataItem { Title = "Some Title", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-2) };
-        Debug.WriteLine($"{di}");
-
-        TestTimerScheduler();
 
         if (!App.RootEventBus.IsSubscribed("WindowVisibilityEvent"))
             App.RootEventBus.Subscribe("WindowVisibilityEvent", EventBusMessageHandler);
@@ -195,57 +194,65 @@ public class TabViewModel : ObservableRecipient
             if (obj is MenuFlyoutItem mfi)
             {
                 if (mfi != null)
-                    AddDataItem($"📢 INFO", $"Got MenuFlyoutItem \"{mfi.Text}\"");
+                    AddDataItem($"INFO 📢", $"Got MenuFlyoutItem \"{mfi.Text}\"");
             }
             else if (obj is AppBarButton abb)
             {
                 if (abb != null)
-                    AddDataItem($"📢 INFO", $"Got AppBarButton \"{abb.Label}\"");
+                    AddDataItem($"INFO 📢", $"Got AppBarButton \"{abb.Label}\"");
             }
             else if (obj is Button btn)
             {
                 if (btn != null)
-                    AddDataItem($"📢 INFO", $"Got Button \"{btn.Content}\"");
+                    AddDataItem($"INFO 📢", $"Got Button \"{btn.Content}\"");
 
-                var installRoot = Directory.GetCurrentDirectory();
+                var installRoot = App.ContentRootPath;
                 var files = new List<FileInfo>();
                 var dir = new DirectoryInfo(installRoot);
                 if (dir.Exists)
                 {
-                    var results = dir.GetFiles($"Tab*.*", SearchOption.TopDirectoryOnly);
+                    var name = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                    var results = dir.GetFiles($"{name}*.*", SearchOption.TopDirectoryOnly);
                     foreach (var file in results)
                     {
-                        AddDataItem($"📢 INFO", $"{file.Name}  v{file.FullName.GetFileVersion()}");
+                        AddDataItem($"INFO 📢", $"{file.Name}  v{file.FullName.GetFileVersion()}");
                     }
 
-                    files.AddRange(dir.GetFiles($"TabApp.exe", SearchOption.AllDirectories));
-                    files.AddRange(dir.GetFiles($"TabApp.dll", SearchOption.AllDirectories));
+                    files.AddRange(dir.GetFiles($"{name}.exe", SearchOption.AllDirectories));
+                    files.AddRange(dir.GetFiles($"{name}.dll", SearchOption.AllDirectories));
                     files = files.Where(o => !o.FullName.Contains(Path.Combine(dir.FullName, ".backup"))).ToList();
                     foreach (var file in files)
                     {
-                        AddDataItem($"📢 INFO", $"{file.Name}  v{file.FullName.GetFileVersion()}");
+                        AddDataItem($"INFO 📢", $"{file.Name}  v{file.FullName.GetFileVersion()}");
                     }
                 }
+
+                //App.MessageProcessor.Enqueue(new MessageEntry { Level = "INFO", Message = $"Got Button \"{btn.Content}\"" });
             }
             else if (obj is Page pg)
             {
                 if (pg != null)
-                    AddDataItem($"📢 INFO", $"Got Page (using font {pg.FontFamily.Source})");
+                    AddDataItem($"INFO 📢", $"Got Page (using font {pg.FontFamily.Source})");
             }
             else if (obj is String str)
             {
                 if (!string.IsNullOrEmpty(str))
-                    AddDataItem($"📢 INFO", $"Got Behavior event \"{str}\"");
+                    AddDataItem($"INFO 📢", $"Got Behavior event \"{str}\"");
             }
             else if (obj is Microsoft.Xaml.Interactions.Core.InvokeCommandAction cmd)
             {
                 if (cmd != null)
-                    AddDataItem($"📢 INFO", $"Got Behavior InvokeCommandAction");
+                    AddDataItem($"INFO 📢", $"Got Behavior InvokeCommandAction");
                 
+            }
+            else if (obj is DataItem di)
+            {
+                if (di != null)
+                    AddDataItem($"INFO 📢", $"Got DataItem created {di.Created}");
             }
             else
             {
-                AddDataItem($"📢 WARNING", $"No action defined for type '{obj?.GetType()}'");
+                AddDataItem($"WARNING 📢", $"No action defined for type '{obj?.GetType()}'");
             }
 
             await Task.Delay(3000);
@@ -258,24 +265,26 @@ public class TabViewModel : ObservableRecipient
 
         TaskTimer.Start(async () =>
         {
-            // Instantiating a PerformanceCounter can take a few seconds, so we'll queue this on another thread.
+            // Instantiating a PerformanceCounter can take up to 20+ seconds, so we'll queue this on another thread.
             await Task.Run(() =>
             {
                 if (_perfCPU == null)
                     _perfCPU = new System.Diagnostics.PerformanceCounter("Processor Information", "% Processor Time", "_Total", true);
             });
+
         }).ContinueWith((t) =>
         {
-            AddDataItem("[DEBUG]", $"PerformanceCounter took {t.Result.Duration.TotalSeconds:N1} seconds to initialize");
+            //AddDataItem("DEBUG", $"⏱️ PerformanceCounter took {t.Result.Duration.TotalSeconds:N1} seconds to initialize");
+            Debug.WriteLine($"[INFO] ⏱️ PerformanceCounter took {t.Result.Duration.TotalSeconds:N1} seconds to initialize.");
         });
 
         // CPU usage with RadialGauge.
-        _level6 = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed); _level6.Opacity = 0.7;
-        _level5 = new SolidColorBrush(Microsoft.UI.Colors.Orange); _level5.Opacity = 0.7;
-        _level4 = new SolidColorBrush(Microsoft.UI.Colors.Yellow); _level4.Opacity = 0.7;
-        _level3 = new SolidColorBrush(Microsoft.UI.Colors.YellowGreen); _level3.Opacity = 0.7;
-        _level2 = new SolidColorBrush(Microsoft.UI.Colors.SpringGreen); _level2.Opacity = 0.7;
-        _level1 = new SolidColorBrush(Microsoft.UI.Colors.RoyalBlue); _level1.Opacity = 0.7;
+        _level6 = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed)   { Opacity = 0.7 };
+        _level5 = new SolidColorBrush(Microsoft.UI.Colors.Orange)      { Opacity = 0.7 };
+        _level4 = new SolidColorBrush(Microsoft.UI.Colors.Yellow)      { Opacity = 0.6 };
+        _level3 = new SolidColorBrush(Microsoft.UI.Colors.YellowGreen) { Opacity = 0.7 };
+        _level2 = new SolidColorBrush(Microsoft.UI.Colors.SpringGreen) { Opacity = 0.7 };
+        _level1 = new SolidColorBrush(Microsoft.UI.Colors.RoyalBlue)   { Opacity = 0.7 };
         if (_timer == null)
         {
             _timer = new DispatcherTimer();
@@ -334,7 +343,7 @@ public class TabViewModel : ObservableRecipient
         {
             Debug.WriteLine($"[WARNING] Received null event bus object!");
         }
-        else if (e.Payload?.GetType() == typeof(Boolean)) // IsVisible
+        else if (e.Payload?.GetType() == typeof(Boolean)) // IsVisible Property
         {
             // We'll only run CPU timer when not minimized.
             if (!(bool)e.Payload)
@@ -356,57 +365,14 @@ public class TabViewModel : ObservableRecipient
     /// </summary>
     void AddDataItem(string title, string text)
     {
-        var di = new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now, Updated = DateTime.Now };
-        App.RootEventBus.Publish("ItemAddedEvent", di);
+        var di = new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now.AddSeconds(-1), Updated = DateTime.Now };
+
+        #region [Auto-scroll attempt]
+        ScrollToItem = di;
+        //App.RootEventBus.Publish("ItemAddedEvent", di);
+        #endregion
+
         App.MainDispatcher?.CallOnUIThread(() => { DataItems.Add(di); });
-    }
-
-    /// <summary>
-    /// Command testing method.
-    /// </summary>
-    async Task ThrowError()
-    {
-        IsBusy = true;
-        try
-        {
-            int test = Random.Shared.Next(1, 11);
-            if (test < 8)
-                throw new Exception("I don't like this number.");
-            else
-                Debug.WriteLine($"[INFO] Passed: {test}");
-        }
-        catch (Exception)
-        {
-            SetState(SystemStates.Warning);
-        }
-        await Task.Delay(1000);
-        IsBusy = false;
-    }
-
-    /// <summary>
-    /// Command testing method.
-    /// </summary>
-    async Task ThrowErrorAsync()
-    {
-        IsBusy = true;
-        Func<int> testFunc = () => 
-        {
-            int test = Random.Shared.Next(1, 11);
-            if (test < 8)
-                throw new Exception("I don't like this number.");
-            return test;
-        };
-        try
-        {
-            int result = await testFunc.RetryAsync(3);
-            Debug.WriteLine($"Passed: {result}");
-        }
-        catch (Exception)
-        {
-            SetState(SystemStates.Warning);
-        }
-        await Task.Delay(1000);
-        IsBusy = false;
     }
 
     /// <summary>
@@ -417,26 +383,26 @@ public class TabViewModel : ObservableRecipient
     {
         return new ObservableCollection<DataItem>
         {
-            new DataItem { Title = "Title #1", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-2), },
-            new DataItem { Title = "Title #2", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-4), },
-            new DataItem { Title = "Title #3", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-6), },
-            new DataItem { Title = "Title #4", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-8), },
-            new DataItem { Title = "Title #5", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-10), },
-            new DataItem { Title = "Title #6", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-12), },
-            new DataItem { Title = "Title #7", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-14), },
-            new DataItem { Title = "Title #8", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-16), },
-            new DataItem { Title = "Title #9", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-18), },
-            new DataItem { Title = "Title #10", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-20), },
-            new DataItem { Title = "Title #11", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-22), },
-            new DataItem { Title = "Title #12", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-24), },
-            new DataItem { Title = "Title #13", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-26), },
-            new DataItem { Title = "Title #14", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-28), },
-            new DataItem { Title = "Title #15", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-30), },
-            new DataItem { Title = "Title #16", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-60), Updated = DateTime.Now.AddDays(-32), },
-            new DataItem { Title = "Title #17", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-80), Updated = DateTime.Now.AddDays(-34), },
-            new DataItem { Title = "Title #18", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-100), Updated = DateTime.Now.AddDays(-36), },
-            new DataItem { Title = "Title #19", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-150), Updated = DateTime.Now.AddDays(-40), },
-            new DataItem { Title = "Title #20", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-365), Updated = DateTime.Now.AddDays(-48), },
+            new DataItem { Title = "Title #1", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-4), Updated = DateTime.Now.AddDays(-2), },
+            new DataItem { Title = "Title #2", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-30), Updated = DateTime.Now.AddDays(-4), },
+            new DataItem { Title = "Title #3", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-60), Updated = DateTime.Now.AddDays(-6), },
+            new DataItem { Title = "Title #4", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-90), Updated = DateTime.Now.AddDays(-8), },
+            //new DataItem { Title = "Title #5", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-10), },
+            //new DataItem { Title = "Title #6", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-12), },
+            //new DataItem { Title = "Title #7", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-14), },
+            //new DataItem { Title = "Title #8", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-16), },
+            //new DataItem { Title = "Title #9", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-18), },
+            //new DataItem { Title = "Title #10", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-20), },
+            //new DataItem { Title = "Title #11", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-22), },
+            //new DataItem { Title = "Title #12", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-24), },
+            //new DataItem { Title = "Title #13", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-26), },
+            //new DataItem { Title = "Title #14", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-28), },
+            //new DataItem { Title = "Title #15", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-30), },
+            //new DataItem { Title = "Title #16", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-60), Updated = DateTime.Now.AddDays(-32), },
+            //new DataItem { Title = "Title #17", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-80), Updated = DateTime.Now.AddDays(-34), },
+            //new DataItem { Title = "Title #18", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-100), Updated = DateTime.Now.AddDays(-36), },
+            //new DataItem { Title = "Title #19", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-150), Updated = DateTime.Now.AddDays(-40), },
+            //new DataItem { Title = "Title #20", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-365), Updated = DateTime.Now.AddDays(-48), },
         };
     }
 
@@ -485,13 +451,7 @@ public class TabViewModel : ObservableRecipient
             if (_useLogarithm)
             {
                 //width = ScaleValueLog(newValue);
-                width = ScaleValueLog2(newValue);
-
-                // This will give us a range scaled around 1 to 100, we'll then multiply by 2 to fit the width.
-                //if (newValue < 1.1)
-                //    width = MathF.Log(2, 1.05f) * (maxWidth / 100f);
-                //else
-                //    width = MathF.Log(newValue, 1.05f) * (maxWidth / 100f);
+                width = ScaleValueLog10(newValue);
             }
             else
             {
@@ -504,8 +464,10 @@ public class TabViewModel : ObservableRecipient
                 Debug.WriteLine(String.Format(format, $"Input: {newValue:N1}", $"Output: {width:N1}"));
             }
 
+            // Opacity is not carried over from the SolidColorBrush color property accessor.
+            var clr = NeedleColor.Color; clr.A = 210;
             // Add entry for histogram.
-            NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = NeedleColor.Color });
+            NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = clr });
 
             // Monitor memory consumption.
             if (NamedColors.Count > 300)
@@ -523,7 +485,7 @@ public class TabViewModel : ObservableRecipient
     /// <returns>scaled amount</returns>
     float ScaleValueLog(float value) => MathF.Log(value < 1.1f ? 1.1f : value, 10f) * 100f;
 
-    float ScaleValueLog2(float value)
+    float ScaleValueLog10(float value)
     {
         // Clamp value between 1 and 100
         value = Math.Clamp(value, 1f, 100f);
@@ -564,16 +526,65 @@ public class TabViewModel : ObservableRecipient
 
     #endregion
 
+    #region [Miscellaneous]
+    /// <summary>
+    /// Command testing method.
+    /// </summary>
+    async Task ThrowError()
+    {
+        IsBusy = true;
+        try
+        {
+            int test = Random.Shared.Next(1, 11);
+            if (test < 8)
+                throw new Exception("I don't like this number.");
+            else
+                Debug.WriteLine($"[INFO] Passed: {test}");
+        }
+        catch (Exception)
+        {
+            SetState(SystemStates.Warning);
+        }
+        await Task.Delay(1000);
+        IsBusy = false;
+    }
+
+    /// <summary>
+    /// Command testing method.
+    /// </summary>
+    async Task ThrowErrorAsync()
+    {
+        IsBusy = true;
+        Func<int> testFunc = () =>
+        {
+            int test = Random.Shared.Next(1, 11);
+            if (test < 8)
+                throw new Exception("I don't like this number.");
+            return test;
+        };
+        try
+        {
+            int result = await testFunc.RetryAsync(3);
+            Debug.WriteLine($"Passed: {result}");
+        }
+        catch (Exception)
+        {
+            SetState(SystemStates.Warning);
+        }
+        await Task.Delay(1000);
+        IsBusy = false;
+    }
+
     public void TestTimerScheduler()
     {
-        int count = 0;
+        int counter = 0;
 
-        // 3.5 seconds total
         var schedules = new[]
         {
-             new TimerSchedule(TimeSpan.FromSeconds(1), 5, 999),
-             //new TimerSchedule(TimeSpan.FromSeconds(2), 1, 888),
-             //new TimerSchedule(TimeSpan.FromSeconds(3), 1, 777),
+             new TimerSchedule(TimeSpan.FromSeconds(2), 0, "First (2 second)"),
+             new TimerSchedule(TimeSpan.FromSeconds(3), 1, "Second (3 second)"),
+             new TimerSchedule(TimeSpan.FromSeconds(4), 1, "Third (4 second)"),
+             new TimerSchedule(TimeSpan.FromSeconds(5), 1, "Fourth (5 second)"),
         };
 
         TimerScheduler timer = new TimerScheduler(schedules);
@@ -581,18 +592,19 @@ public class TabViewModel : ObservableRecipient
 
         timer.Elapsed += (object? sender, TimerElapsedEventArgs e) =>
         {
-            count++;
+            counter++;
 
-            Debug.WriteLine($"[INFO] Elapsed event id {e.SignalId}: {count} at {DateTime.Now.ToString("h:mm:ss.fff tt")}");
+            Debug.WriteLine($"[INFO] Elapsed event id {e.SignalId}: {counter} at {DateTime.Now.ToString("h:mm:ss.fff tt")}");
 
-            if (count == 1)
+            // If first round then we won't have a previous time to compare so just return.
+            if (counter == 1)
             {
                 previousTime = e.SignalTime;
                 return;
             }
 
             TimeSpan interval = e.SignalTime - previousTime;
-            Debug.WriteLine($"[INFO] Interval: {interval.TotalSeconds} seconds");
+            Debug.WriteLine($"[INFO] Interval was {interval.TotalSeconds:N1} seconds");
             previousTime = e.SignalTime;
         };
 
@@ -600,4 +612,6 @@ public class TabViewModel : ObservableRecipient
         //await Task.Delay(5000);
         //timer.Dispose();
     }
+    
+    #endregion
 }

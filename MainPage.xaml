@@ -81,15 +81,29 @@
             <!--#endregion-->
 
             <!--  https://github.com/microsoft/microsoft-ui-xaml/issues/8750  -->
+            <!--
             <Image
                 Grid.Column="1"
-                Width="30"
-                Height="30"
-                Margin="0,2,8,0"
+                Width="24"
+                Height="24"
+                Margin="0,2,11,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
                 Source="{x:Bind ViewModel.SystemState, Mode=OneWay, Converter={StaticResource StateToImage}}"
                 Stretch="UniformToFill"
+                ToolTipService.ToolTip="System State" />
+            -->
+            <!--  Fake LED using gradient brush.  -->
+            <Rectangle
+                Grid.Column="1"
+                Width="20"
+                Height="20"
+                Margin="0,2,13,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Fill="{x:Bind ViewModel.SystemState, Mode=OneWay, Converter={StaticResource StateToGradientBrush}}"
+                RadiusX="10"
+                RadiusY="10"
                 ToolTipService.ToolTip="System State" />
         </Grid>
         <NavigationView

@@ -9,7 +9,6 @@ public class TimerScheduler : IDisposable
     IEnumerator<TimerSchedule> _schedules;
     int _currentTryCount;
     string? _currentId = string.Empty;
-
     public delegate void TimerElapsedEventHandler(object? sender, TimerElapsedEventArgs e);
     public event TimerElapsedEventHandler? Elapsed;
     public bool Enabled { get => _timer.Enabled; }

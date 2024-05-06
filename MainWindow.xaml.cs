@@ -14,7 +14,7 @@ public sealed partial class MainWindow : Window
     {
         _ = App.GetStopWatch(true);
 
-        Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
+        Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
         this.InitializeComponent();
 

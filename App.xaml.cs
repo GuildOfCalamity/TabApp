@@ -18,6 +18,9 @@ using Windows.UI.ViewManagement;
 using TabApp.ViewModels;
 using Microsoft.UI.Windowing;
 using TabApp.Helpers;
+using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -33,7 +36,7 @@ namespace TabApp
         #region [Props]
         Window? m_window;
         static UISettings m_UISettings = new UISettings();
-        static ValueStopwatch vsw = ValueStopwatch.StartNew();
+        static ValueStopwatch m_vsw = ValueStopwatch.StartNew();
         public static Version WindowsVersion => GeneralExtensions.GetWindowsVersionUsingAnalyticsInfo();
         public static IntPtr WindowHandle { get; set; }
         public static FrameworkElement? MainRoot { get; set; }
@@ -41,6 +44,8 @@ namespace TabApp
         public static string AssetFolder { get; set; } = "Assets";
         public static Microsoft.UI.Dispatching.DispatcherQueue? MainDispatcher { get; set; }
         public static Microsoft.UI.Windowing.AppWindow? MainAppWindow { get; set; }
+        public static string? ContentRootPath { get; set; }
+        public static MessageProcessor MessageProcessor { get; set; } = new MessageProcessor();
 
         public static event Action<Microsoft.UI.Windowing.AppWindow> OnWindowClosing = (appwin) => { };
         public static event Action<Microsoft.UI.Windowing.AppWindow> OnWindowDestroying = (appwin) => { };
@@ -115,13 +120,13 @@ namespace TabApp
         {
             if (cfg is not null)
             {
-                Process proc = Process.GetCurrentProcess();
-                cfg.firstRun = false;
-                cfg.time = DateTime.Now;
-                cfg.state = SystemStates.Shutdown;
-                cfg.metrics = $"Process used {proc.PrivateMemorySize64 / 1024 / 1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
                 if (App.MainRoot is not null)
                     cfg.theme = $"{App.MainRoot.ActualTheme}";
+                cfg.firstRun = false;
+                cfg.time = DateTime.Now;
+                cfg.state = SystemStates.Shutdown; // If the state is anything other than shutdown, this signals that a crash ocurred and the debug log should be reviewed.
+                Process proc = Process.GetCurrentProcess();
+                cfg.metrics = $"Process used {proc.PrivateMemorySize64 / 1024 / 1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
                 try
                 {
                     _ = ConfigHelper.SaveConfig(cfg);
@@ -168,8 +173,20 @@ namespace TabApp
                  // Dump all configs from Microsoft.Extensions.Configuration.IConfiguration
                  foreach (var cfg in context.Configuration.GetChildren())
                  {
-                     Debug.WriteLine($"[INFO] {cfg.Key} ⇨ {cfg.Value}");
+                     if (!string.IsNullOrEmpty(cfg.Key))
+                        Debug.WriteLine($"[INFO] {cfg.Key} ⇨ {cfg.Value}");
                  }
+
+                // Dump HostingEnvironment from Microsoft.Extensions.Hosting.Internal
+                var he = context.HostingEnvironment as HostingEnvironment;
+                if (he != null)
+                {
+                    // From the documentation, the IHostEnvironment populates the ContentRootPath using Directory.GetCurrentDirectory().
+                    ContentRootPath = !string.IsNullOrEmpty(he.ContentRootPath) ? he.ContentRootPath : AppContext.BaseDirectory;
+                    Debug.WriteLine($"[HOSTING] Application ⇨ {he.ApplicationName}");
+                    Debug.WriteLine($"[HOSTING] Environment ⇨ {he.EnvironmentName}");
+                    Debug.WriteLine($"[HOSTING] ContentRoot ⇨ {he.ContentRootPath}");
+                }
             }).
             Build();
             #endregion
@@ -185,8 +202,8 @@ namespace TabApp
                 this.DebugSettings.XamlResourceReferenceFailed += DebugOnXamlResourceReferenceFailed;
             }
 
-            Debug.WriteLine($"[INFO] App Constructor took {vsw.GetElapsedTime().TotalMilliseconds:N1} milliseconds");
-            vsw = ValueStopwatch.StartNew();
+            Debug.WriteLine($"[INFO] App Constructor took {m_vsw.GetElapsedTime().TotalMilliseconds:N1} milliseconds");
+            m_vsw = ValueStopwatch.StartNew();
         }
 
         /// <summary>
@@ -242,12 +259,12 @@ namespace TabApp
                         var idleTime = DateTime.Now - _lastMove;
                         if (idleTime.TotalSeconds > 1.01d && LocalConfig != null)
                         {
-                            Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y}");
                             _lastMove = DateTime.Now;
                             if (s.Position.X > 0 && s.Position.Y > 0)
                             {
                                 if (s.Presenter is Microsoft.UI.Windowing.OverlappedPresenter op && op.State != OverlappedPresenterState.Maximized)
                                 {
+                                    Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y}");
                                     LocalConfig.windowX = s.Position.X;
                                     LocalConfig.windowY = s.Position.Y;
                                     try
@@ -374,11 +391,42 @@ namespace TabApp
 
             if ((App.Current as App)!.Host?.Services.GetService(typeof(T)) is not T service)
             {
-                throw new ArgumentException($"{typeof(T)} needs to be registered in ConfigureServices within App.xaml.cs.");
+                throw new ArgumentException($"{typeof(T)} needs to be registered in the host builder within App.xaml.cs");
             }
 
             return service;
         }
+
+        /// <summary>
+        /// Parts taken from https://github.com/aspnet/Logging/blob/master/samples/SampleApp/Program.cs
+        /// </summary>
+        void TestILogger()
+        {
+            var loggingConfig = new ConfigurationBuilder()
+               .SetBasePath(Directory.GetCurrentDirectory())
+               .AddJsonFile("ILogger.json", optional: true, reloadOnChange: true)
+               .Build();
+
+            // A Web App based program would configure logging via the WebHostBuilder.
+            // Create a logger factory with filters that can be applied across all logger providers.
+            var serviceCollection = new ServiceCollection()
+                .AddLogging(builder => {
+                    builder.AddConfiguration(loggingConfig.GetSection("Logging"))
+                           .AddFilter("Microsoft", LogLevel.Warning)
+                           .AddFilter("System", LogLevel.Warning)
+                           .AddFilter("TabApp", LogLevel.Debug)
+                           .AddConsole();
+                    builder.AddEventLog(); // entries will be added to the Event Viewer
+                });
+
+            // Providers may be added to a LoggerFactory before any loggers are created
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            // Getting the logger using the class's name is conventional
+            m_Logger = serviceProvider.GetRequiredService<ILogger<App>>();
+            m_Logger.LogInformation($"Started logger at {DateTime.Now.ToLongTimeString()}");
+        }
+        static ILogger? m_Logger;
 
         /// <summary>
         /// Simplified debug logger for app-wide use.
@@ -401,8 +449,8 @@ namespace TabApp
 
         public static TimeSpan GetStopWatch(bool reset = false)
         {
-            var ts = vsw.GetElapsedTime();
-            if (reset) { vsw = ValueStopwatch.StartNew(); }
+            var ts = m_vsw.GetElapsedTime();
+            if (reset) { m_vsw = ValueStopwatch.StartNew(); }
             return ts;
         }
 
@@ -451,7 +499,7 @@ namespace TabApp
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
+                Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
             }
         }
 
@@ -659,7 +707,7 @@ namespace TabApp
         /// </summary>
         static void DialogDismissedHandler(IUICommand command)
         {
-            Debug.WriteLine($"UICommand.Label ⇨ {command.Label}");
+            Debug.WriteLine($"[INFO] UICommand.Label ⇨ {command.Label}");
         }
 
         /// <summary>

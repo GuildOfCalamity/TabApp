@@ -38,7 +38,7 @@ public sealed partial class Tab3Page : Page
 
     public Tab3Page()
     {
-        Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
+        Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
         this.InitializeComponent();
 
@@ -139,7 +139,7 @@ public sealed partial class Tab3Page : Page
     /// The <see cref="DispatcherTimer"/> in WinUI3 has a resolution of approximately 33.34 milliseconds 
     /// per tick, which corresponds to a frame rate of around 30 frames per second. This means that 
     /// the timer ticks at a frequency of approximately 30 times per second, with each tick occurring 
-    /// roughly every 33.34 milliseconds.
+    /// roughly every 33 milliseconds.
     /// </para>
     /// <para>
     /// The <see cref="DispatcherTimer"/> is based on the UI thread's message pump, which is why its 
@@ -148,7 +148,7 @@ public sealed partial class Tab3Page : Page
     /// above is generally best for a smooth user experience.
     /// </para>
     /// <para>
-    /// If you need a higher update rate or a more accurate timer, you might consider using alternative 
+    /// If you need a higher update frequency or a more accurate timer, you could consider alternative 
     /// timer mechanisms. One such alternative is the <see cref="CompositionTarget.Rendering"/> event, 
     /// which is triggered each time a new frame is rendered. This event is tightly synchronized with 
     /// the display's refresh rate, providing a more accurate timer for animations (usually 60 FPS).
@@ -163,7 +163,7 @@ public sealed partial class Tab3Page : Page
         // We want to avoid oversubscription. In the event that we're doing too
         // much inside the tick event we'll stop the timer while we operate and
         // then restart it. I believe the DispatchTimer handles this internally
-        // for you but it's a good idea to follow best practices.
+        // for you, but it's a good idea to follow best practices.
         timer?.Stop();
 
         int counter = 0;
@@ -198,8 +198,9 @@ public sealed partial class Tab3Page : Page
             {
                 // Testing accessors.
                 var dcdi = cvs.DataContext as Models.DataItem;
+                // Our only child will be an Image.
                 var img = cvs.Children.FirstOrDefault() as Image;
-                if (img != null)
+                if (img != null && img.ActualWidth > 0)
                 {
                     // The value can be erroneous when using from inside a parent element with multiple children.
                     x = Canvas.GetLeft(img); 
@@ -208,8 +209,7 @@ public sealed partial class Tab3Page : Page
                     x += xSpeed;
 
                     // Bounce off the horizontal edge.
-                    if (x < 0 || x > cvs.ActualWidth - img.ActualWidth)
-                        xSpeed *= -1;
+                    if (x < 0 || x > cvs.ActualWidth - img.ActualWidth) xSpeed *= -1;
 
                     // Handle resizing issues.
                     if (x < -1) x = 1;
@@ -225,8 +225,9 @@ public sealed partial class Tab3Page : Page
             {
                 // Testing accessors.
                 var dcdi = cvs.DataContext as Models.DataItem;
+                // Our only child will be an Image.
                 var img = cvs.Children.FirstOrDefault() as Image;
-                if (img != null)
+                if (img != null && img.ActualHeight > 0)
                 {
                     // The value can be erroneous when using from inside a parent element with multiple children.
                     y = Canvas.GetTop(img);
@@ -235,8 +236,7 @@ public sealed partial class Tab3Page : Page
                     y += ySpeed;
 
                     // Bounce off the vertical edge.
-                    if (y < 0 || y > cvs.ActualHeight - img.ActualHeight)
-                        ySpeed *= -1;
+                    if (y < 0 || y > cvs.ActualHeight - img.ActualHeight) ySpeed *= -1;
 
                     // Handle resizing issues.
                     if (y < -1) y = 1;
@@ -261,6 +261,7 @@ public sealed partial class Tab3Page : Page
             image.Source = new BitmapImage(_assets[Random.Shared.Next(0, _assets.Count)]);
             image.Width = 32;
             image.Height = 32;
+            image.Stretch = Stretch.Fill;
             image.CenterPoint = new System.Numerics.Vector3(16, 16, 0); // If using rotation animations, be sure to set the center point.
             if (_canvasList.Count == 0)
             {

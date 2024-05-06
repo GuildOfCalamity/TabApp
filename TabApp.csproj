@@ -75,6 +75,7 @@
     <None Remove="Assets\Warning.png" />
     <None Remove="Controls\RadialGaugeStyle.xaml" />
     <None Remove="Controls\SeparatorLine.xaml" />
+    <None Remove="ILogger.json" />
     <None Remove="MainPage.xaml" />
     <None Remove="Styles\Controls.xaml" />
     <None Remove="Styles\FontSizes.xaml" />
@@ -84,6 +85,11 @@
     <None Remove="Views\Tab4Page.xaml" />
     <None Remove="Views\Tab5Page.xaml" />
     <None Remove="Views\Tab6Page.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ILogger.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -195,4 +201,5 @@
       </ItemGroup>
       <RemoveDir Directories="@(RemovingFolders)" />
   </Target>
+  <ProjectExtensions><VisualStudio><UserProperties logging_1json__JsonSchema="https://appsemble.app/api.json" /></VisualStudio></ProjectExtensions>
 </Project>

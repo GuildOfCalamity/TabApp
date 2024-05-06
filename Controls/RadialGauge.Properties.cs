@@ -167,7 +167,7 @@ public partial class RadialGauge : RangeBase
     /// Identifies the GaugeFont dependency property.
     /// </summary>
     public static readonly DependencyProperty GaugeFontProperty =
-        DependencyProperty.Register(nameof(GaugeFont), typeof(FontFamily), typeof(RadialGauge), new PropertyMetadata(null));
+        DependencyProperty.Register(nameof(GaugeFont), typeof(FontFamily), typeof(RadialGauge), new PropertyMetadata(new FontFamily("Consolas")));
 
     /// <summary>
     /// Gets or sets the rounding interval for the Value.

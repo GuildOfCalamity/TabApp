@@ -31,7 +31,7 @@ public sealed partial class Tab1Page : Page
 
     public Tab1Page()
     {
-        Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
+        Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
         this.InitializeComponent();
 
@@ -134,7 +134,6 @@ public sealed partial class Tab1Page : Page
                 int selectedIndex = DataListView.Items.Count - 1;
                 if (selectedIndex < 0) { return; }
                 DataListView.SelectedIndex = selectedIndex;
-                DataListView.UpdateLayout();
                 DataListView.ScrollIntoView((DataItem)DataListView.SelectedItem);
             });
         }

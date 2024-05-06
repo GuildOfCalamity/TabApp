@@ -1,11 +1,10 @@
-﻿using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using TabApp.Models;
 
 namespace TabApp.Helpers;
 
@@ -179,4 +178,43 @@ public partial class ScrollViewerExtensions
     {
         obj.SetValue(HorizontalScrollBarMarginProperty, value);
     }
+}
+
+
+/// <summary>
+/// This did not work.
+/// </summary>
+public static class AttachedCommand
+{
+    #region [ScrollTarget DP]
+    public static readonly DependencyProperty ScrollTargetProperty = DependencyProperty.RegisterAttached(
+        "ScrollTarget",
+        typeof(object),
+        typeof(AttachedCommand),
+        new PropertyMetadata((object)null,
+        (obj, args) =>
+        {
+            if (args.NewValue == null)
+                return; // or scroll to top if you prefer
+            
+            if (!(obj is ListViewBase lvb))
+                throw new InvalidOperationException($"ScrollTarget property should only be used with ListViewBase.");
+
+            //lvb.ScrollIntoView(args.NewValue);
+
+            // Unfortunately the only way to get this to auto-scroll is to select
+            // the item and then call ScrollIntoView. It seems they must be used
+            // in tandem for the effect to work properly.
+            lvb.DispatcherQueue.TryEnqueue(() =>
+            {
+                var num = lvb.Items.Count;
+                if (num < 0) { return; }
+                lvb.SelectedIndex = num - 1;
+                lvb.ScrollIntoView(lvb.SelectedItem);
+            });
+        }));
+
+    public static object GetScrollTarget(DependencyObject obj) => obj.GetValue(ScrollTargetProperty);
+    public static void SetScrollTarget(DependencyObject obj, object value) => obj.SetValue(ScrollTargetProperty, value);
+    #endregion
 }

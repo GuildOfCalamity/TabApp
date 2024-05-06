@@ -2804,7 +2804,7 @@ public static class GeneralExtensions
             }
             catch (Exception ex) when (attempts > 0)
             {
-                Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
+                Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
                 Thread.Sleep(2000);
             }
         }
@@ -2824,7 +2824,7 @@ public static class GeneralExtensions
             }
             catch (Exception ex) when (attempts > 0)
             {
-                Debug.WriteLine($"{MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
+                Debug.WriteLine($"[DEBUG] {MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
                 await Task.Delay(2000);
             }
         }
