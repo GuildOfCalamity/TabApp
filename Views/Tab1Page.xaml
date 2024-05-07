@@ -182,17 +182,22 @@
                 <!--#endregion-->
 
                 <!--#region [Content]-->
+                <!--
+                    helper:ScrollViewerExtensions.VerticalScrollBarMargin="{Binding MinHeight, ElementName=gridItem, Converter={StaticResource DoubleTopThickness}}"
+                -->
                 <ListView
                     x:Name="DataListView"
                     Grid.Row="1"
                     VerticalAlignment="Stretch"
-                    helper:ScrollViewerExtensions.VerticalScrollBarMargin="{Binding MinHeight, ElementName=gridItem, Converter={StaticResource DoubleTopThickness}}"
+                    helper:AttachedCommand.ScrollTarget="{x:Bind ViewModel.ScrollToItem, Mode=OneWay}"
                     IsHitTestVisible="{x:Bind ViewModel.IsBusy, Converter={StaticResource BooleanInverter}, Mode=OneWay}"
                     ItemsSource="{x:Bind ViewModel.DataItems, Mode=OneWay}"
+                    Loaded="DataListView_Loaded"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.HorizontalScrollMode="Enabled"
                     ScrollViewer.VerticalScrollBarVisibility="Visible"
                     ScrollViewer.VerticalScrollMode="Enabled"
+                    SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}"
                     SelectionChanged="DataListViewSelectionChanged"
                     SelectionMode="Single">
                     <ListView.Transitions>

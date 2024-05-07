@@ -41,7 +41,10 @@ public class MessageProcessor : IDisposable
         WriteMessage(message); // Adding is completed so just log the message
     }
 
-    
+    /// <summary>
+    /// For now we'll write the message to disk, but this could be serial, ethernet, etc.
+    /// </summary>
+    /// <param name="message"><see cref="MessageEntry"/></param>
     void WriteMessage(MessageEntry message)
     {
         try
@@ -77,6 +80,11 @@ public class MessageProcessor : IDisposable
         try { _outputThread.Join(1500); }
         catch (ThreadStateException) { }
     }
+
+    /// <summary>
+    /// Finalizer for safety (if the Dispose method isn't explicitly called)
+    /// </summary>
+    ~MessageProcessor() => Dispose();
 }
 
 public struct MessageEntry

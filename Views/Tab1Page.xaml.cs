@@ -38,8 +38,6 @@ public sealed partial class Tab1Page : Page
         // Ensure that the Page is only created once, and cached during navigation.
         this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
-        DataListView.Loaded += DataListView_Loaded;
-
         ViewModel = App.GetService<TabViewModel>();
 
         if (!App.RootEventBus.IsSubscribed("BusyEvent"))
@@ -238,8 +236,8 @@ public sealed partial class Tab1Page : Page
         {
             if (item is DataItem di)
             {
-                // Set the currently selected DataItem.
-                ViewModel.SelectedItem = di;
+                // You could also set the selected DataItem from here.
+                //ViewModel.SelectedItem = di;
 
                 if (!string.IsNullOrEmpty(di.Data))
                 {
@@ -260,7 +258,7 @@ public sealed partial class Tab1Page : Page
     }
 
     /// <summary>
-    /// Auto-scroll to last item in the list.
+    /// For testing various auto-scroll techniques.
     /// </summary>
     void DataListView_Loaded(object sender, RoutedEventArgs e)
     {
@@ -269,6 +267,38 @@ public sealed partial class Tab1Page : Page
         if (dlv == null)
             return;
 
-        DataListView.ScrollIntoView(dlv.Items.LastOrDefault());
+        //var items = dlv.ItemsSource as IEnumerable<DataItem>;
+        //var item = items?.LastOrDefault();
+        //if (item != null)
+        //{
+        //    //dlv.SelectedItem = item;
+        //    dlv.ScrollIntoView(item);
+        //    ((ListViewItem)dlv.ContainerFromItem(item))?.Focus(FocusState.Programmatic);
+        //}
+
+        #region [Just for effect, can be removed]
+        if (ViewModel.Option1)
+            return;
+
+        var items = dlv.ItemsSource as IEnumerable<DataItem>;
+        Task.Run(async () =>
+        {
+            if (items != null)
+            {
+                await Task.Delay(500);
+                foreach (var di in items)
+                {
+                    await Task.Delay(80);
+                    dlv.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        dlv.SelectedItem = di;
+                        dlv.ScrollIntoView(di);
+                        ((ListViewItem)dlv.ContainerFromItem(di))?.Focus(FocusState.Programmatic);
+                    });
+                }
+            }
+
+        });
+        #endregion
     }
 }

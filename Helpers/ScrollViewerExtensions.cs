@@ -4,7 +4,6 @@ using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using TabApp.Models;
 
 namespace TabApp.Helpers;
 
@@ -182,7 +181,9 @@ public partial class ScrollViewerExtensions
 
 
 /// <summary>
-/// This did not work.
+/// <example>XAML example using a <see cref="Microsoft.UI.Xaml.Controls.ListView"/><code>
+/// {ListView helper:AttachedCommand.ScrollTarget="{x:Bind ViewModel.ScrollToItem, Mode=OneWay}"}
+/// </code></example>
 /// </summary>
 public static class AttachedCommand
 {
@@ -191,7 +192,7 @@ public static class AttachedCommand
         "ScrollTarget",
         typeof(object),
         typeof(AttachedCommand),
-        new PropertyMetadata((object)null,
+        new PropertyMetadata(null,
         (obj, args) =>
         {
             if (args.NewValue == null)
@@ -200,17 +201,22 @@ public static class AttachedCommand
             if (!(obj is ListViewBase lvb))
                 throw new InvalidOperationException($"ScrollTarget property should only be used with ListViewBase.");
 
+            // This should've worked, but it didn't.
             //lvb.ScrollIntoView(args.NewValue);
 
-            // Unfortunately the only way to get this to auto-scroll is to select
-            // the item and then call ScrollIntoView. It seems they must be used
-            // in tandem for the effect to work properly.
+            // We can use two techniques here:
+            // 1) Select the last item and then scroll to it.
+            // 2) Query the last item and then scroll to it.
             lvb.DispatcherQueue.TryEnqueue(() =>
             {
-                var num = lvb.Items.Count;
-                if (num < 0) { return; }
-                lvb.SelectedIndex = num - 1;
-                lvb.ScrollIntoView(lvb.SelectedItem);
+                //var num = lvb.Items.Count;
+                //if (num < 0) { return; }
+                //lvb.SelectedIndex = num - 1;
+                //lvb.ScrollIntoView(lvb.SelectedItem);
+
+                var last = lvb.Items.LastOrDefault();
+                if (last != null)
+                    lvb.ScrollIntoView(last);
             });
         }));
 

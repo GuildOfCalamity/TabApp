@@ -154,7 +154,7 @@
                 <ItemsControl ItemsSource="{x:Bind ViewModel.DataItems, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="model:DataItem">
-                            <StackPanel Margin="0,0,2,2" Opacity="{Binding ElementName=ThisPage, Path=ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanOpacityInverse}}">
+                            <StackPanel Margin="0,2,2,2" Opacity="{Binding ElementName=ThisPage, Path=ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BooleanOpacityInverse}}">
                                 <Grid x:Name="gridItem" Margin="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*" />

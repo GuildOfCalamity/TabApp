@@ -10,6 +10,7 @@ using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Numerics;
 using System.Reflection;
@@ -215,6 +216,8 @@ public static class GeneralExtensions
         return DateTime.Now;
     }
 
+    public static DateTime ConvertToLastDayOfMonth(this DateTime date) => new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+
     public static async Task LaunchUrlFromTextBox(Microsoft.UI.Xaml.Controls.TextBox textBox)
     {
         string text = "";
@@ -266,6 +269,40 @@ public static class GeneralExtensions
         FieldInfo[] myFieldInfo = myType.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
         for (int i = 0; i < myFieldInfo.Length; i++) { results[myFieldInfo[i].Name] = myFieldInfo[i].FieldType; }
         return results;
+    }
+
+    /// <summary>
+    /// This should only be used on instantiated objects, not static objects.
+    /// </summary>
+    public static string ToStringDump<T>(this T obj)
+    {
+        const string Seperator = "\r\n";
+        const BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.Public;
+
+        if (obj is null)
+            return string.Empty;
+
+        try
+        {
+            var objProperties =
+                from property in obj?.GetType().GetProperties(BindingFlags)
+                where property.CanRead
+                select string.Format("{0} : {1}", property.Name, property.GetValue(obj, null));
+
+            return string.Join(Seperator, objProperties);
+        }
+        catch (Exception ex)
+        {
+            return $"⇒ Probably a non-instanced object: {ex.Message}";
+        }
+    }
+
+    public static byte[] TrimEnd(this byte[] array)
+    {
+        var idx = Array.FindLastIndex(array, b => b != 0); // Find the last index where there is a valid character
+        Array.Resize(ref array, idx + 1); // Resize the array to trim the ending zero
+
+        return array;
     }
 
     /// <summary>
@@ -1027,7 +1064,7 @@ public static class GeneralExtensions
     /// Returns a random selection from <see cref="Microsoft.UI.Colors"/>.
     /// </summary>
     /// <returns><see cref="Windows.UI.Color"/></returns>
-	public static Windows.UI.Color GetRandomMicrosoftUIColor()
+    public static Windows.UI.Color GetRandomMicrosoftUIColor()
     {
         try
         {
@@ -1401,6 +1438,21 @@ public static class GeneralExtensions
     public static string RemoveNumerics(this string str)
     {
         return string.Concat(str?.Where(c => char.IsLetter(c)) ?? string.Empty);
+    }
+
+    public static string RemoveDiacritics(this string strThis)
+    {
+        if (string.IsNullOrEmpty(strThis))
+            return string.Empty;
+
+        var sb = new StringBuilder();
+
+        foreach (char c in strThis.Normalize(NormalizationForm.FormD))
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString();
     }
 
     /// <summary>
@@ -1779,6 +1831,8 @@ public static class GeneralExtensions
         return decimalPortion;
     }
 
+    public static int GetDecimalPlacesCount(this string valueString) => valueString.SkipWhile(c => c.ToString(CultureInfo.CurrentCulture) != CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator).Skip(1).Count();
+
     public static Windows.UI.Color[] CreateColorScale(int start, int end)
     {
         var colors = new Windows.UI.Color[end - start + 1];
@@ -1838,6 +1892,137 @@ public static class GeneralExtensions
         if (size < Math.Pow(1024, 5)) { return (size / Math.Pow(1024, 4)).ToString("F0") + "TB"; }
         if (size < Math.Pow(1024, 6)) { return (size / Math.Pow(1024, 5)).ToString("F0") + "PB"; }
         return (size / Math.Pow(1024, 6)).ToString("F0") + "EB";
+    }
+
+    /// <summary>
+    /// Determine if a file/folder path exceed the maximum allowed.
+    /// </summary>
+    /// <param name="path">full path</param>
+    /// <returns>true if too long, false otherwise</returns>
+    public static bool IsPathTooLong(string path)
+    {
+        try
+        {
+            var tmp = Path.GetFullPath(path);
+            return false;
+        }
+        catch (UnauthorizedAccessException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
+        catch (PathTooLongException) { return true; }
+    }
+
+    /// <summary>
+    /// Attempts to get the directory name and the directories inside the given path.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>true if readable, false otherwise</returns>
+    public static bool IsPathReadable(string path)
+    {
+        try
+        {
+            var dn = Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(dn)) { return false; }
+            string[] test = Directory.GetDirectories(dn, "*.*", SearchOption.TopDirectoryOnly);
+        }
+        catch (UnauthorizedAccessException) { return false; }
+        catch (PathTooLongException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
+        catch (IOException) { return false; }
+        return true;
+    }
+
+    /// <summary>
+    /// Determines the last <see cref="DriveType.Fixed"/> drive letter on a client machine.
+    /// </summary>
+    /// <returns>drive letter</returns>
+    public static string GetLastFixedDrive()
+    {
+        char lastLetter = 'C';
+        DriveInfo[] drives = DriveInfo.GetDrives();
+        foreach (DriveInfo drive in drives)
+        {
+            if (drive.DriveType == DriveType.Fixed && drive.IsReady)
+            {
+                if (drive.Name[0] > lastLetter)
+                    lastLetter = drive.Name[0];
+            }
+        }
+        return $"{lastLetter}:";
+    }
+
+    /// <summary>
+    /// Checks to see if a date is between two dates.
+    /// </summary>
+    public static bool Between(this DateTime dt, DateTime rangeBeg, DateTime rangeEnd) => dt.Ticks >= rangeBeg.Ticks && dt.Ticks <= rangeEnd.Ticks;
+    public static bool WorkingDay(this DateTime date) => date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday;
+    public static bool IsWeekend(this DateTime date) => date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday;
+    public static DateTime NextWorkday(this DateTime date)
+    {
+        DateTime nextDay = date.AddDays(1);
+        while (!nextDay.WorkingDay())
+        {
+            nextDay = nextDay.AddDays(1);
+        }
+        return nextDay;
+    }
+
+    /// <summary>
+    /// Determines the next date by passing in a <see cref="System.DayOfWeek"/>. 
+    /// e.g. From <paramref name="current"/>, when is next <see cref="System.DayOfWeek.Thursday"/>?
+    /// </summary>
+    public static DateTime Next(this DateTime current, DayOfWeek dayOfWeek)
+    {
+        int offsetDays = dayOfWeek - current.DayOfWeek;
+        if (offsetDays <= 0) { offsetDays += 7; }
+        DateTime result = current.AddDays(offsetDays);
+        return result;
+    }
+
+    /// <summary>
+    /// Accounts for once the date1 is past date2.
+    /// </summary>
+    public static bool WithinOneDayOrPast(this DateTime date1, DateTime date2)
+    {
+        if (date1 < date2) // Account for past-due amounts.
+            return true;
+        else
+        {
+            TimeSpan difference = date1 - date2;
+            return Math.Abs(difference.TotalDays) <= 1.0;
+        }
+    }
+
+    /// <summary>
+    /// Only accounts for date1 being within range of date2.
+    /// </summary>
+    public static bool WithinOneDay(this DateTime date1, DateTime date2)
+    {
+        TimeSpan difference = date1 - date2;
+        return Math.Abs(difference.TotalDays) <= 1.0;
+    }
+
+    /// <summary>
+    /// Only accounts for date1 being within range of date2 by some amount.
+    /// </summary>
+    public static bool WithinAmountOfDays(this DateTime date1, DateTime date2, double days)
+    {
+        TimeSpan difference = date1 - date2;
+        return Math.Abs(difference.TotalDays) <= days;
+    }
+
+
+    /// <summary>
+    /// Gets a <see cref="DateTime"/> object representing the time until midnight.
+    /// <example>
+    /// <code>var hoursUntilMidnight = TimeUntilMidnight().TimeOfDay.TotalHours;</code>
+    /// </example>
+    /// </summary>
+    public static DateTime TimeUntilMidnight()
+    {
+        DateTime now = DateTime.Now;
+        DateTime midnight = now.Date.AddDays(1);
+        TimeSpan timeUntilMidnight = midnight - now;
+        return new DateTime(timeUntilMidnight.Ticks);
     }
 
     /// <summary>
@@ -2737,10 +2922,41 @@ public static class GeneralExtensions
     }
 
     /// <summary>
+    /// <para>
+    /// If using the Windows version helper methods on older versions of dotnet (below .NET 5)
+    /// it may not provide the correct major version. To make sure you get the right version 
+    /// using Environment.OSVersion you should add an "app.manifest" using Visual Studio and 
+    /// then un-comment the relevant "supportedOS" XML tag.
+    /// </para>
+    /// <para>
+    /// <see cref="Windows.System.Profile.AnalyticsInfo.VersionInfo"/>
+    /// can be used in newer dotnet versions. For an example see 
+    /// <see cref="GeneralExtensions.GetWindowsVersionUsingAnalyticsInfo()"/>.
+    /// </para>
+    /// </summary>
+    internal static bool IsWindowsNT { get; } = Environment.OSVersion.Platform == PlatformID.Win32NT;
+
+    /// <summary>
+    /// Minimum supported client: Windows 2000 Professional
+    /// </summary>
+    /// <returns>true if OS is Windows 8 or greater</returns>
+    public static bool IsWindows8OrLater() => IsWindowsNT && Environment.OSVersion.Version >= new Version(6, 2);
+
+    /// <summary>
+    /// Minimum supported client: Windows 2000 Professional
+    /// </summary>
+    /// <returns>true if OS is Windows 10 or greater</returns>
+    public static bool IsWindows10OrLater() => IsWindowsNT && Environment.OSVersion.Version >= new Version(10, 0);
+
+    /// <summary>
     /// Get OS version by way of <see cref="Environment.OSVersion"/>.
     /// </summary>
     /// <returns>true if Win11 or higher, false otherwise</returns>
     public static bool IsWindows11OrGreater() => Environment.OSVersion.Version >= new Version(10, 0, 22000, 0);
+
+
+    public static bool IsReferenceType<T>(this T type) => RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
 
     public static UInt16 ReverseBytes(this UInt16 value)
     {
@@ -3163,6 +3379,50 @@ public static class GeneralExtensions
         }
 
         return words;
+    }
+
+    /// <summary>
+    /// Runs the specified asynchronous method with return type.
+    /// NOTE: Will not catch exceptions generated by the task.
+    /// </summary>
+    /// <param name="asyncMethod">The asynchronous method to execute.</param>
+    public static T RunSynchronously<T>(Func<Task<T>> asyncMethod)
+    {
+        if (asyncMethod == null)
+            throw new ArgumentNullException($"{nameof(asyncMethod)} cannot be null");
+
+        var prevCtx = SynchronizationContext.Current;
+        try
+        {   // Invoke the function and alert the context when it completes.
+            var t = asyncMethod();
+            if (t == null)
+                throw new InvalidOperationException("No task provided.");
+
+            return t.GetAwaiter().GetResult();
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(prevCtx); }
+    }
+
+    /// <summary>
+    /// Runs the specified asynchronous method without return type.
+    /// NOTE: Will not catch exceptions generated by the task.
+    /// </summary>
+    /// <param name="asyncMethod">The asynchronous method to execute.</param>
+    public static void RunSynchronously(Func<Task> asyncMethod)
+    {
+        if (asyncMethod == null)
+            throw new ArgumentNullException($"{nameof(asyncMethod)}");
+
+        var prevCtx = SynchronizationContext.Current;
+        try
+        {   // Invoke the function and alert the context when it completes
+            var t = asyncMethod();
+            if (t == null)
+                throw new InvalidOperationException("No task provided.");
+
+            t.GetAwaiter().GetResult();
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(prevCtx); }
     }
 
     /// <summary>
@@ -3669,6 +3929,49 @@ public static class GeneralExtensions
     {
         return (ts & System.Threading.ThreadState.WaitSleepJoin) != 0;
     }
+
+    #region [Web]
+    public static async Task<MemoryStream> GetStreamFromWeb(this string url)
+    {
+        using (var ms = new MemoryStream())
+        {
+            var webReq = (HttpWebRequest)WebRequest.Create(url);
+            webReq.Method = "GET";
+            using (var response = (HttpWebResponse)await webReq.GetResponseAsync())
+            {
+                response.GetResponseStream()?.CopyTo(ms);
+                return ms;
+            }
+        }
+    }
+
+    public static async Task<T?> ReadAsJsonAsync<T>(this HttpContent content)
+    {
+        var json = await content.ReadAsStringAsync();
+
+        if (!string.IsNullOrEmpty(json))
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, new System.Text.Json.JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+        else
+            return default(T);
+    }
+
+    public static async Task<string> DownloadAllAsync(IEnumerable<string> locations)
+    {
+        using (var client = new HttpClient())
+        {
+            var downloads = locations.Select(client.GetStringAsync);
+            var downloadTasks = downloads.ToArray();
+            var pages = await Task.WhenAll(downloadTasks);
+            return string.Concat(pages);
+        }
+    }
+
+    public static bool IsPortAvailableForListening(int portNumber)
+    {
+        System.Net.IPEndPoint[] activeTcpListeners = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
+        return activeTcpListeners.Select(x => x.Port == portNumber).FirstOrDefault();
+    }
+    #endregion
 
     #region [Helpers for ValueTask]
     /*

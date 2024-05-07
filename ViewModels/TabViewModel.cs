@@ -8,15 +8,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-using CommunityToolkit.Mvvm.ComponentModel;
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+
 using TabApp.Helpers;
 using TabApp.Models;
-
 
 namespace TabApp.ViewModels;
 
@@ -34,6 +35,7 @@ public class TabViewModel : ObservableRecipient
     string _popupText = "...";
     SystemStates _systemState = SystemStates.None;
     DataItem? _selectedItem;
+    DataItem? _scrollToItem;
     
     DateTime _lastMove = DateTime.Now;
     static DispatcherTimer? _timer;
@@ -119,10 +121,17 @@ public class TabViewModel : ObservableRecipient
     }
 
     public ObservableCollection<DataItem> DataItems = new(); //public ObservableCollection<DataItem> DataItems = new();
+
     public DataItem? SelectedItem
     {
         get => _selectedItem;
         set => SetProperty(ref _selectedItem, value); 
+    }
+
+    public DataItem? ScrollToItem
+    {
+        get => _scrollToItem;
+        set => SetProperty(ref _scrollToItem, value);
     }
 
     public ObservableCollection<NamedColor> NamedColors = new();
@@ -145,14 +154,6 @@ public class TabViewModel : ObservableRecipient
             ThrowExCommand?.NotifyCanExecuteChanged();
         }
     }
-
-    private DataItem? _scrollToItem;
-    public DataItem? ScrollToItem
-    {
-        get => _scrollToItem;
-        set => SetProperty(ref _scrollToItem, value);
-    }
-
 
     public ICommand SampleCommand { get; }
     public RelayCommand? ThrowExCommand { get; }
@@ -269,7 +270,12 @@ public class TabViewModel : ObservableRecipient
             await Task.Run(() =>
             {
                 if (_perfCPU == null)
+                {
+                    // There's a bazillion categories of performance counters available.
+                    // To learn more about them check out my other repo ⇒ https://github.com/GuildOfCalamity/ResourceMonitor
                     _perfCPU = new System.Diagnostics.PerformanceCounter("Processor Information", "% Processor Time", "_Total", true);
+                    Debug.WriteLine(_perfCPU.ToStringDump());
+                }
             });
 
         }).ContinueWith((t) =>
@@ -367,7 +373,7 @@ public class TabViewModel : ObservableRecipient
     {
         var di = new DataItem { Title = title, Data = $"{text}", Created = DateTime.Now.AddSeconds(-1), Updated = DateTime.Now };
 
-        #region [Auto-scroll attempt]
+        #region [auto-scroll techniques]
         ScrollToItem = di;
         //App.RootEventBus.Publish("ItemAddedEvent", di);
         #endregion
@@ -383,16 +389,16 @@ public class TabViewModel : ObservableRecipient
     {
         return new ObservableCollection<DataItem>
         {
-            new DataItem { Title = "Title #1", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-4), Updated = DateTime.Now.AddDays(-2), },
-            new DataItem { Title = "Title #2", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-30), Updated = DateTime.Now.AddDays(-4), },
-            new DataItem { Title = "Title #3", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-60), Updated = DateTime.Now.AddDays(-6), },
-            new DataItem { Title = "Title #4", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-90), Updated = DateTime.Now.AddDays(-8), },
-            //new DataItem { Title = "Title #5", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-10), },
-            //new DataItem { Title = "Title #6", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-12), },
-            //new DataItem { Title = "Title #7", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-14), },
-            //new DataItem { Title = "Title #8", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-16), },
-            //new DataItem { Title = "Title #9", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-18), },
-            //new DataItem { Title = "Title #10", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-20), },
+            new DataItem { Title = "Title #1",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-4), Updated = DateTime.Now.AddDays(-2), },
+            new DataItem { Title = "Title #2",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-30), Updated = DateTime.Now.AddDays(-4), },
+            new DataItem { Title = "Title #3",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-60), Updated = DateTime.Now.AddDays(-6), },
+            new DataItem { Title = "Title #4",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-90), Updated = DateTime.Now.AddDays(-8), },
+            new DataItem { Title = "Title #5",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-10), },
+            new DataItem { Title = "Title #6",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-12), },
+            new DataItem { Title = "Title #7",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-14), },
+            new DataItem { Title = "Title #8",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-16), },
+            new DataItem { Title = "Title #9",  Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created  = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-18), },
+            new DataItem { Title = "Title #10", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-20), },
             //new DataItem { Title = "Title #11", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-22), },
             //new DataItem { Title = "Title #12", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-24), },
             //new DataItem { Title = "Title #13", Data = $"{_emojis[Random.Shared.Next(_emojis.Count)]} Here is a sample note with data.", Created = DateTime.Now.AddDays(-31), Updated = DateTime.Now.AddDays(-26), },
@@ -465,7 +471,7 @@ public class TabViewModel : ObservableRecipient
             }
 
             // Opacity is not carried over from the SolidColorBrush color property accessor.
-            var clr = NeedleColor.Color; clr.A = 210;
+            var clr = NeedleColor.Color; clr.A = 220;
             // Add entry for histogram.
             NamedColors.Insert(0, new NamedColor { Width = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = clr });
 
@@ -476,6 +482,7 @@ public class TabViewModel : ObservableRecipient
 
         return newValue;
     }
+    #endregion
 
     #region [Scaling and Clamping]
     /// <summary>
@@ -522,8 +529,6 @@ public class TabViewModel : ObservableRecipient
         var result = System.Numerics.Vector3.Dot(new System.Numerics.Vector3(begin, begin, 0), new System.Numerics.Vector3(end, end, 0));
         return result > 0 ? result / divy : result;
     }
-    #endregion
-
     #endregion
 
     #region [Miscellaneous]
