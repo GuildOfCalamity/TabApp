@@ -169,7 +169,7 @@ public static class ConfigHelper
     /// <summary>
     /// Basic config saver.
     /// </summary>
-    public static async Task<bool> SaveConfig(Config? obj, bool encrypt = false)
+    public static async Task<bool> SaveConfigAsync(Config? obj, bool encrypt = false)
     {
         if (obj == null)
             return false;
@@ -201,9 +201,35 @@ public static class ConfigHelper
     }
 
     /// <summary>
+    /// Basic config saver.
+    /// </summary>
+    public static bool SaveConfig(Config? obj, bool encrypt = false)
+    {
+        if (obj == null)
+            return false;
+
+        var options = new JsonSerializerOptions { IncludeFields = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true };
+
+        if (App.IsPackaged)
+        {
+            var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            using FileStream createStream = File.Create(Path.Combine(folder.Path, $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}{FileNameSuffix}{FileExtension}"), 2048, encrypt ? FileOptions.Encrypted : FileOptions.None);
+            JsonSerializer.Serialize(createStream, obj, options);
+            createStream.Dispose();
+        }
+        else
+        {
+            string outputString = JsonSerializer.Serialize(obj, options);
+            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}{FileNameSuffix}{FileExtension}"), outputString);
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Basic config loader.
     /// </summary>
-    public static async Task<Config?> LoadConfig()
+    public static async Task<Config?> LoadConfigAsync()
     {
         var options = new JsonSerializerOptions { IncludeFields = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true };
 
@@ -228,6 +254,27 @@ public static class ConfigHelper
         }
     }
 
+    /// <summary>
+    /// Basic config loader.
+    /// </summary>
+    public static Config? LoadConfig()
+    {
+        var options = new JsonSerializerOptions { IncludeFields = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true };
+
+        if (App.IsPackaged)
+        {
+            var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            var file = folder.GetFileAsync($"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}{FileNameSuffix}{FileExtension}");
+            using FileStream openStream = File.OpenRead(file.GetResults().Path);
+            return JsonSerializer.Deserialize<Config>(openStream, options) ?? new Config();
+        }
+        else
+        {
+            string readString = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}{FileNameSuffix}{FileExtension}"));
+            Config readData = JsonSerializer.Deserialize<Config>(readString, options) ?? new Config();
+            return readData;
+        }
+    }
     /// <summary>
     /// https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-how-to?pivots=dotnet-5-0
     /// </summary>

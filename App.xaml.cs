@@ -34,6 +34,8 @@ namespace TabApp
     public partial class App : Application
     {
         #region [Props]
+        int m_width = 1100;
+        int m_height = 700;
         Window? m_window;
         static UISettings m_UISettings = new UISettings();
         static ValueStopwatch m_vsw = ValueStopwatch.StartNew();
@@ -98,10 +100,17 @@ namespace TabApp
         {
             get
             {
-                if (App.IsPackaged)
-                    return (ElementTheme)Enum.Parse(typeof(ElementTheme), Application.Current.RequestedTheme.ToString());
-                else
-                    return App.MainRoot?.ActualTheme ?? ElementTheme.Default;
+                try
+                {
+                    if (App.IsPackaged)
+                        return (ElementTheme)Enum.Parse(typeof(ElementTheme), Application.Current.RequestedTheme.ToString());
+                    else
+                        return App.MainRoot?.ActualTheme ?? ElementTheme.Default;
+                }
+                catch (Exception)
+                {
+                    return ElementTheme.Default;
+                }
             }
         }
         #endregion
@@ -335,13 +344,7 @@ namespace TabApp
                 {
                     try
                     {
-                        LocalConfig = await ConfigHelper.LoadConfig();
-                        if (LocalConfig != null)
-                        {
-                            Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY}");
-                            //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
-                            appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, 1100, 700), Microsoft.UI.Windowing.DisplayArea.Primary);
-                        }
+                        LocalConfig = await ConfigHelper.LoadConfigAsync();
                     }
                     catch (Exception ex)
                     {
@@ -361,15 +364,26 @@ namespace TabApp
                             state = SystemStates.Init,
                             metrics = "N/A",
                         };
-                        await ConfigHelper.SaveConfig(LocalConfig);
-
-                        appWin?.Resize(new Windows.Graphics.SizeInt32(1100, 700));
-                        CenterWindow(m_window);
+                        await ConfigHelper.SaveConfigAsync(LocalConfig);
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"[ERROR] {nameof(ConfigHelper.SaveConfig)}: {ex.Message}");
                     }
+                }
+            }).ContinueWith((t) =>
+            {
+                if (LocalConfig!.firstRun)
+                {
+                    Debug.WriteLine($"[INFO] Moving window to center screen");
+                    appWin?.Resize(new Windows.Graphics.SizeInt32(m_width, m_height));
+                    MainRoot?.DispatcherQueue.TryEnqueue(() => { CenterWindow(m_window); });
+                }
+                else
+                {
+                    Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY}");
+                    //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
+                    appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, m_width, m_height), Microsoft.UI.Windowing.DisplayArea.Primary);
                 }
             });
             #endregion
@@ -482,6 +496,7 @@ namespace TabApp
         /// <summary>
         /// Centers a <see cref="Microsoft.UI.Xaml.Window"/> based on the <see cref="Microsoft.UI.Windowing.DisplayArea"/>.
         /// </summary>
+        /// <remarks>This must be run on the UI thread.</remarks>
         public void CenterWindow(Window window)
         {
             try
@@ -747,11 +762,11 @@ namespace TabApp
             {
                 panel.Children.Add(new Image
                 {
-                    Margin = new Thickness(1, -45, 1, 1), // Move the image into the title area.
+                    Margin = new Thickness(1, -46, 1, 1), // Move the image into the title area.
                     HorizontalAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Right,
                     Stretch = Microsoft.UI.Xaml.Media.Stretch.UniformToFill,
-                    Width = 48,
-                    Height = 48,
+                    Width = 40,
+                    Height = 40,
                     Source = new BitmapImage(imageUri)
                 });
             }
@@ -765,6 +780,7 @@ namespace TabApp
                 TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap 
             });
 
+            // If you prefer a TextBox instead of TextBlock:
             var tb = new TextBox()
             {
                 Text = message,

@@ -19,7 +19,7 @@ namespace TabApp.Helpers;
 public static class DispatcherQueueExtensions
 {
     /// <summary>
-	/// Indicates whether or not <see cref="DispatcherQueue.HasThreadAccess"/> is available.
+    /// Indicates whether or not <see cref="DispatcherQueue.HasThreadAccess"/> is available.
     /// </summary>
     private static readonly bool IsHasThreadAccessPropertyAvailable =
 #if WINAPPSDK

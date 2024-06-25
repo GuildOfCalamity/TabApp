@@ -181,8 +181,8 @@ public partial class ScrollViewerExtensions
 
 
 /// <summary>
-/// <example>XAML example using a <see cref="Microsoft.UI.Xaml.Controls.ListView"/><code>
-/// {ListView helper:AttachedCommand.ScrollTarget="{x:Bind ViewModel.ScrollToItem, Mode=OneWay}"}
+/// <example>XAML example using a <see cref="Microsoft.UI.Xaml.Controls.ListView"/>:<code>
+/// &lt;ListView helper:AttachedCommand.ScrollTarget="{x:Bind ViewModel.ScrollToItem, Mode=OneWay}"&gt;
 /// </code></example>
 /// </summary>
 public static class AttachedCommand
@@ -199,7 +199,7 @@ public static class AttachedCommand
                 return; // or scroll to top if you prefer
             
             if (!(obj is ListViewBase lvb))
-                throw new InvalidOperationException($"ScrollTarget property should only be used with ListViewBase.");
+                throw new InvalidOperationException($"{nameof(ScrollTargetProperty)} property should only be used with Microsoft.UI.Xaml.Controls.ListViewBase");
 
             // This should've worked, but it didn't.
             //lvb.ScrollIntoView(args.NewValue);

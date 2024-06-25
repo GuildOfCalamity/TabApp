@@ -2744,18 +2744,17 @@ public static class GeneralExtensions
     public static string GetRandomColorString(ElementTheme? theme)
     {
         StringBuilder sb = new StringBuilder();
-        string pwChars = "012346789ABCDEF";
+        string chTable = "012346789ABCDEF";
 
         if (theme.HasValue && theme == ElementTheme.Dark)
-            pwChars = "346789ABCDEF";
+            chTable = "346789ABCDEF";
         else if (theme.HasValue && theme == ElementTheme.Light)
-            pwChars = "012346789ABC";
+            chTable = "012346789ABC";
 
-        char[] charArray = pwChars.Distinct().ToArray();
-        var result = new char[7];
+        //char[] charArray = chTable.Distinct().ToArray();
 
         for (int x = 0; x < 6; x++)
-            sb.Append(pwChars[Random.Shared.Next() % pwChars.Length]);
+            sb.Append(chTable[Random.Shared.Next() % chTable.Length]);
 
         return $"#{sb}";
     }
@@ -3199,6 +3198,19 @@ public static class GeneralExtensions
     {
         if (inputArray.Length > 1)
             return inputArray.Skip(1).ToArray();
+        else
+            return Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// Helper for parsing command line arguments.
+    /// </summary>
+    /// <param name="inputArray"></param>
+    /// <returns>string array of args excluding the 1st arg</returns>
+    public static string[] IgnoreNthTakeRest(this string[] inputArray, int skip = 1)
+    {
+        if (inputArray.Length > 1)
+            return inputArray.Skip(skip).ToArray();
         else
             return Array.Empty<string>();
     }
